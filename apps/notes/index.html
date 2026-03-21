@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notes</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f1923;
+      --surface: #111827;
+      --surface2: #1a2236;
+      --border: #1e2940;
+      --text: #e0e8f0;
+      --text-dim: #7b8aa6;
+      --accent: #60a5fa;
+      --accent-dim: rgba(96, 165, 250, 0.12);
+      --danger: #f87171;
+      --radius: 8px;
+    }
+
+    body {
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 16px;
+    }
+
+    .app {
+      max-width: 980px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+      gap: 12px;
+      min-height: calc(100vh - 32px);
+    }
+
+    .top-bar,
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    h1 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-right: auto;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      padding: 10px;
+      align-items: center;
+    }
+
+    .btn,
+    .input,
+    .select,
+    textarea {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.85rem;
+    }
+
+    .btn {
+      padding: 8px 12px;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+      color: var(--accent);
+    }
+
+    .btn:hover:not(:disabled) {
+      background: var(--accent-dim);
+      border-color: var(--accent);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn.secondary { color: var(--text); }
+    .btn.danger { color: var(--danger); }
+
+    .input,
+    .select {
+      padding: 8px 10px;
+      min-width: 0;
+    }
+
+    .input:focus,
+    .select:focus,
+    textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .path-row {
+      display: grid;
+      grid-template-columns: 120px 1fr 220px;
+      gap: 8px;
+      padding: 0 10px 10px;
+    }
+
+    .editor-wrap {
+      display: grid;
+      grid-template-rows: auto 1fr;
+      min-height: 0;
+    }
+
+    .meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 10px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-dim);
+      font-size: 0.78rem;
+    }
+
+    textarea {
+      width: 100%;
+      height: 100%;
+      min-height: 320px;
+      resize: none;
+      padding: 14px;
+      line-height: 1.55;
+      background: transparent;
+      border: none;
+      border-radius: 0;
+      color: var(--text);
+    }
+
+    .status-bar {
+      justify-content: space-between;
+      color: var(--text-dim);
+      font-size: 0.78rem;
+      padding: 0 2px;
+    }
+
+    .pill {
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    .saved { color: #34d399; }
+    .unsaved { color: #fbbf24; }
+    .error { color: var(--danger); }
+
+    @media (max-width: 720px) {
+      .path-row {
+        grid-template-columns: 1fr;
+      }
+
+      .meta,
+      .status-bar {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="top-bar">
+      <h1>Notes</h1>
+      <span class="pill" id="saveState">Local draft</span>
+    </div>
+
+    <div class="card">
+      <div class="toolbar">
+        <button class="btn" id="newBtn">New</button>
+        <button class="btn" id="saveBtn">Save to Files</button>
+        <button class="btn secondary" id="openBtn">Open from Files</button>
+        <button class="btn danger" id="deleteBtn">Delete File</button>
+      </div>
+      <div class="path-row">
+        <input class="input" id="folderInput" value="root" placeholder="folder">
+        <input class="input" id="nameInput" value="note.txt" placeholder="filename">
+        <select class="select" id="mimeSelect">
+          <option value="text/plain">Plain text (.txt)</option>
+          <option value="text/markdown">Markdown (.md)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="card editor-wrap">
+      <div class="meta">
+        <span id="fileLabel">Unsaved note</span>
+        <span id="stats">0 chars · 0 words</span>
+      </div>
+      <textarea id="editor" spellcheck="false" placeholder="Start typing..."></textarea>
+    </div>
+
+    <div class="status-bar">
+      <span id="message">Ready.</span>
+      <span id="draftInfo">Draft autosaves locally.</span>
+    </div>
+  </div>
+
+  <script>
+    const FILES_APP_ID = 'mbq7qhd4mqro';
+    const DRAFT_KEY = 'draft_v1';
+    const ACTIVE_FILE_KEY = 'active_file_v1';
+
+    const editor = document.getElementById('editor');
+    const folderInput = document.getElementById('folderInput');
+    const nameInput = document.getElementById('nameInput');
+    const mimeSelect = document.getElementById('mimeSelect');
+    const saveBtn = document.getElementById('saveBtn');
+    const openBtn = document.getElementById('openBtn');
+    const deleteBtn = document.getElementById('deleteBtn');
+    const newBtn = document.getElementById('newBtn');
+    const messageEl = document.getElementById('message');
+    const statsEl = document.getElementById('stats');
+    const fileLabelEl = document.getElementById('fileLabel');
+    const saveStateEl = document.getElementById('saveState');
+    const draftInfoEl = document.getElementById('draftInfo');
+
+    let activeFile = null;
+    let isDirty = false;
+    let autosaveTimer = null;
+    let appVisible = true;
+
+    function setMessage(text, cls = '') {
+      messageEl.className = cls;
+      messageEl.textContent = text;
+    }
+
+    function normalizeFolder(value) {
+      return (value || 'root').trim() || 'root';
+    }
+
+    function normalizeName(value) {
+      return (value || '').trim();
+    }
+
+    function updateStats() {
+      const text = editor.value;
+      const chars = text.length;
+      const words = (text.trim().match(/\S+/g) || []).length;
+      statsEl.textContent = `${chars} chars · ${words} words`;
+    }
+
+    function updateHeader() {
+      const folder = normalizeFolder(folderInput.value);
+      const name = normalizeName(nameInput.value);
+      fileLabelEl.textContent = name ? `${folder}/${name}` : 'Unsaved note';
+      saveStateEl.textContent = isDirty ? 'Unsaved changes' : 'Local draft';
+      saveStateEl.className = `pill ${isDirty ? 'unsaved' : 'saved'}`;
+    }
+
+    async function saveDraft() {
+      const draft = {
+        folder: normalizeFolder(folderInput.value),
+        name: nameInput.value,
+        mimeType: mimeSelect.value,
+        content: editor.value,
+        updatedAt: Date.now()
+      };
+      await appStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+      draftInfoEl.textContent = `Draft saved ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    }
+
+    async function saveActiveFileMeta() {
+      await appStorage.setItem(ACTIVE_FILE_KEY, JSON.stringify(activeFile || null));
+    }
+
+    async function restoreState() {
+      const [draftRaw, activeRaw] = await Promise.all([
+        appStorage.getItem(DRAFT_KEY),
+        appStorage.getItem(ACTIVE_FILE_KEY)
+      ]);
+
+      if (draftRaw) {
+        try {
+          const draft = JSON.parse(draftRaw);
+          folderInput.value = draft.folder || 'root';
+          nameInput.value = draft.name || 'note.txt';
+          mimeSelect.value = draft.mimeType || 'text/plain';
+          editor.value = draft.content || '';
+        } catch {}
+      }
+
+      if (activeRaw) {
+        try {
+          activeFile = JSON.parse(activeRaw);
+        } catch {}
+      }
+
+      isDirty = false;
+      updateStats();
+      updateHeader();
+    }
+
+    function markDirty() {
+      isDirty = true;
+      updateHeader();
+      scheduleAutosave();
+    }
+
+    function scheduleAutosave() {
+      if (!appVisible) return;
+      clearTimeout(autosaveTimer);
+      autosaveTimer = setTimeout(() => {
+        saveDraft().catch(() => {});
+      }, 300);
+    }
+
+    async function saveToFiles() {
+      const folder = normalizeFolder(folderInput.value);
+      const name = normalizeName(nameInput.value);
+      if (!name) {
+        setMessage('Enter a filename first.', 'error');
+        nameInput.focus();
+        return;
+      }
+
+      saveBtn.disabled = true;
+      try {
+        const payload = {
+          action: 'saveFile',
+          file: {
+            id: activeFile?.id,
+            folder,
+            name,
+            mimeType: mimeSelect.value,
+            content: editor.value
+          }
+        };
+
+        const response = await appMessaging.send(FILES_APP_ID, payload);
+        if (!response?.ok) throw new Error(response?.error || 'save_failed');
+
+        activeFile = response.file;
+        folderInput.value = activeFile.folder || folder;
+        nameInput.value = activeFile.name || name;
+        mimeSelect.value = activeFile.mimeType || mimeSelect.value;
+        isDirty = false;
+        await Promise.all([saveDraft(), saveActiveFileMeta()]);
+        updateHeader();
+        setMessage(`Saved to Files: ${activeFile.folder}/${activeFile.name}`, 'saved');
+      } catch (err) {
+        setMessage(`Save failed: ${err.message}`, 'error');
+      } finally {
+        saveBtn.disabled = false;
+      }
+    }
+
+    async function openFromFiles() {
+      const folder = normalizeFolder(folderInput.value);
+      const existingName = normalizeName(nameInput.value);
+      const requested = window.prompt('Open file name from Files:', existingName || 'note.txt');
+      if (requested === null) return;
+      const name = normalizeName(requested);
+      if (!name) return;
+
+      openBtn.disabled = true;
+      try {
+        const response = await appMessaging.send(FILES_APP_ID, {
+          action: 'getFile',
+          folder,
+          name
+        });
+
+        if (!response?.ok) throw new Error(response?.error || 'open_failed');
+        if (!response.file) {
+          setMessage(`File not found: ${folder}/${name}`, 'error');
+          return;
+        }
+
+        activeFile = response.file;
+        folderInput.value = activeFile.folder || folder;
+        nameInput.value = activeFile.name || name;
+        mimeSelect.value = activeFile.mimeType || 'text/plain';
+        editor.value = activeFile.content || '';
+        isDirty = false;
+        await Promise.all([saveDraft(), saveActiveFileMeta()]);
+        updateStats();
+        updateHeader();
+        setMessage(`Opened ${activeFile.folder}/${activeFile.name}`, 'saved');
+      } catch (err) {
+        setMessage(`Open failed: ${err.message}`, 'error');
+      } finally {
+        openBtn.disabled = false;
+      }
+    }
+
+    async function deleteFromFiles() {
+      const folder = normalizeFolder(folderInput.value);
+      const name = normalizeName(nameInput.value);
+      if (!name) {
+        setMessage('Enter a filename to delete.', 'error');
+        return;
+      }
+      if (!window.confirm(`Delete ${folder}/${name} from Files?`)) return;
+
+      deleteBtn.disabled = true;
+      try {
+        const response = await appMessaging.send(FILES_APP_ID, activeFile?.id
+          ? { action: 'deleteFile', id: activeFile.id }
+          : { action: 'deleteFile', folder, name });
+
+        if (!response?.ok) throw new Error(response?.error || 'delete_failed');
+
+        activeFile = null;
+        await saveActiveFileMeta();
+        setMessage(`Deleted ${folder}/${name}`, 'saved');
+      } catch (err) {
+        setMessage(`Delete failed: ${err.message}`, 'error');
+      } finally {
+        deleteBtn.disabled = false;
+        updateHeader();
+      }
+    }
+
+    async function createNew() {
+      if (isDirty && !window.confirm('Discard unsaved changes?')) return;
+      activeFile = null;
+      folderInput.value = 'root';
+      nameInput.value = 'note.txt';
+      mimeSelect.value = 'text/plain';
+      editor.value = '';
+      isDirty = false;
+      await Promise.all([saveDraft(), saveActiveFileMeta()]);
+      updateStats();
+      updateHeader();
+      setMessage('New note ready.');
+      editor.focus();
+    }
+
+    editor.addEventListener('input', () => {
+      markDirty();
+      updateStats();
+    });
+
+    folderInput.addEventListener('input', () => { markDirty(); updateHeader(); });
+    nameInput.addEventListener('input', () => { markDirty(); updateHeader(); });
+    mimeSelect.addEventListener('change', () => { markDirty(); updateHeader(); });
+
+    saveBtn.addEventListener('click', saveToFiles);
+    openBtn.addEventListener('click', openFromFiles);
+    deleteBtn.addEventListener('click', deleteFromFiles);
+    newBtn.addEventListener('click', createNew);
+
+    window.addEventListener('message', e => {
+      if (e.data?.type === 'slopos-visibility') {
+        appVisible = e.data.state === 'active';
+        if (!appVisible) {
+          clearTimeout(autosaveTimer);
+        } else if (isDirty) {
+          scheduleAutosave();
+        }
+      }
+    });
+
+    window.parent.postMessage({ type: 'slopos-get-visibility' }, '*');
+
+    window.addEventListener('beforeunload', () => {
+      clearTimeout(autosaveTimer);
+    });
+
+    (async function init() {
+      await restoreState();
+      setMessage('Ready. Files integration available.');
+      editor.focus();
+    })();
+  </script>
+</body>
+</html>
