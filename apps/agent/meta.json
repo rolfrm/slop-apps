@@ -1,0 +1,4 @@
+{
+  "name": "Agent",
+  "icon": "<svg viewBox=\"0 0 56 56\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><rect x=\"4\" y=\"4\" width=\"48\" height=\"48\" rx=\"8\" fill=\"#13202e\" stroke=\"#60a5fa\" stroke-width=\"1.5\"/><path d=\"M18 21.5C18 18.4624 20.4624 16 23.5 16H32.5C35.5376 16 38 18.4624 38 21.5V27.5C38 30.5376 35.5376 33 32.5 33H28.5L23 38V33H23.5C20.4624 33 18 30.5376 18 27.5V21.5Z\" fill=\"#1d3146\" stroke=\"#60a5fa\" stroke-width=\"1.5\"/><circle cx=\"24\" cy=\"24.5\" r=\"1.75\" fill=\"#34d399\"/><circle cx=\"28\" cy=\"24.5\" r=\"1.75\" fill=\"#34d399\"/><circle cx=\"32\" cy=\"24.5\" r=\"1.75\" fill=\"#34d399\"/></svg>"
+}
