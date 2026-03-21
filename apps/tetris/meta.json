@@ -1,0 +1,4 @@
+{
+  "name": "Tetris",
+  "icon": "<svg viewBox=\"0 0 56 56\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><rect x=\"4\" y=\"4\" width=\"48\" height=\"48\" rx=\"6\" fill=\"#1a2a4a\" stroke=\"#a78bfa\" stroke-width=\"1.5\"/><rect x=\"14\" y=\"16\" width=\"8\" height=\"8\" fill=\"#a78bfa\"/><rect x=\"22\" y=\"16\" width=\"8\" height=\"8\" fill=\"#a78bfa\"/><rect x=\"30\" y=\"16\" width=\"8\" height=\"8\" fill=\"#a78bfa\"/><rect x=\"22\" y=\"24\" width=\"8\" height=\"8\" fill=\"#a78bfa\"/><rect x=\"18\" y=\"34\" width=\"8\" height=\"8\" fill=\"#34d399\"/><rect x=\"26\" y=\"34\" width=\"8\" height=\"8\" fill=\"#34d399\"/><rect x=\"34\" y=\"34\" width=\"8\" height=\"8\" fill=\"#34d399\"/></svg>"
+}
