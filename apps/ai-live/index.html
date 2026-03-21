@@ -1,0 +1,1177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI Live</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+  :root {
+    --bg: #0f1923;
+    --bg-surface: #13202e;
+    --bg-elevated: #182838;
+    --bg-hover: #1d3146;
+    --border: rgba(80, 140, 190, 0.35);
+    --text: #e0e8f0;
+    --text-dim: #8da2b8;
+    --accent: #60a5fa;
+    --accent-2: #34d399;
+    --accent-glow: rgba(96, 165, 250, 0.18);
+    --danger: #ff6b6b;
+    --success: #34d399;
+    --warning: #fbbf24;
+    --shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
+    --radius: 10px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'JetBrains Mono', monospace;
+    background: linear-gradient(180deg, #0c141d 0%, #0f1923 100%);
+    color: var(--text);
+    min-height: 100vh;
+    overflow: hidden;
+  }
+
+  button, input, textarea, select { font: inherit; }
+
+  .app {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+
+  .title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--accent);
+    text-shadow: 0 0 12px var(--accent-glow);
+  }
+
+  .provider-switch {
+    display: inline-flex;
+    gap: 6px;
+    margin-left: 8px;
+  }
+
+  .tab-btn {
+    padding: 8px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: rgba(8, 14, 22, 0.45);
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  }
+
+  .tab-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text);
+  }
+
+  .tab-btn.active[data-provider="gemini"] {
+    color: var(--accent);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.12);
+  }
+
+  .tab-btn.active[data-provider="openai"] {
+    color: var(--accent-2);
+    border-color: var(--accent-2);
+    box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.12);
+  }
+
+  .spacer { margin-left: auto; }
+
+  .toolbar-note {
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  .content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 14px;
+    gap: 14px;
+    overflow: auto;
+  }
+
+  .panel {
+    min-width: 0;
+    padding: 16px;
+    border-radius: var(--radius);
+    background: linear-gradient(180deg, rgba(24, 40, 56, 0.92), rgba(19, 32, 46, 0.96));
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .panel.hidden {
+    display: none;
+  }
+
+  .panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .panel-title {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+  }
+
+  .badge {
+    font-size: 10px;
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+    background: rgba(8, 14, 22, 0.4);
+    border-radius: 999px;
+    padding: 4px 8px;
+  }
+
+  .label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.4px;
+    color: var(--text-dim);
+  }
+
+  .row {
+    display: flex;
+    gap: 10px;
+  }
+
+  .stack {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  input, textarea, select, button {
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: rgba(8, 14, 22, 0.65);
+    color: var(--text);
+    padding: 11px 12px;
+  }
+
+  input, textarea, select {
+    width: 100%;
+  }
+
+  textarea {
+    resize: vertical;
+  }
+
+  input:focus, textarea:focus, select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.12);
+  }
+
+  button {
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+  }
+
+  button:hover {
+    background: var(--bg-hover);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  button:active {
+    transform: translateY(1px);
+  }
+
+  button.danger:hover {
+    border-color: var(--danger);
+    color: var(--danger);
+  }
+
+  button.secondary:hover {
+    border-color: var(--accent-2);
+    color: var(--accent-2);
+  }
+
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .metric {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: rgba(8, 14, 22, 0.38);
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  .metric-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.1px;
+    color: var(--text-dim);
+  }
+
+  .metric-value {
+    font-size: 12px;
+    color: var(--text);
+    word-break: break-word;
+  }
+
+  .ok { color: var(--success); }
+  .warn { color: var(--warning); }
+  .err { color: var(--danger); }
+
+  .status {
+    font-size: 11px;
+    color: var(--text-dim);
+    min-height: 16px;
+  }
+
+  .log {
+    min-height: 260px;
+    background: rgba(8, 14, 22, 0.55);
+  }
+
+  .help {
+    font-size: 11px;
+    line-height: 1.5;
+    color: var(--text-dim);
+  }
+
+  .footer-panel {
+    padding: 14px 16px;
+    border-radius: var(--radius);
+    background: linear-gradient(180deg, rgba(24, 40, 56, 0.92), rgba(19, 32, 46, 0.96));
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+  }
+
+  .footer-panel code {
+    color: var(--accent-2);
+  }
+
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: rgba(8, 14, 22, 0.4); }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(96, 165, 250, 0.28);
+    border-radius: 999px;
+    border: 2px solid rgba(8, 14, 22, 0.35);
+  }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(96, 165, 250, 0.42); }
+
+  @media (max-width: 700px) {
+    body { overflow: auto; }
+    .toolbar { align-items: flex-start; }
+    .provider-switch { width: 100%; margin-left: 0; }
+    .spacer { display: none; }
+    .row { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+  <div class="app">
+    <div class="toolbar">
+      <div class="title">&gt;_ ai live</div>
+      <div class="provider-switch">
+        <button class="tab-btn active" data-provider="gemini" id="tabGemini">Gemini</button>
+        <button class="tab-btn" data-provider="openai" id="tabOpenAI">OpenAI</button>
+      </div>
+      <div class="spacer"></div>
+      <div class="toolbar-note" id="toolbarNote">gemini selected</div>
+    </div>
+
+    <main class="content">
+      <section class="panel" id="geminiPanel">
+        <div class="panel-head">
+          <div class="panel-title" style="color: var(--accent);">Gemini Live</div>
+          <div class="badge">audio + mic</div>
+        </div>
+
+        <div class="label">API key</div>
+        <div class="row">
+          <input id="geminiApiKey" type="password" placeholder="Paste Gemini API key" />
+          <button id="geminiSaveKey">Save</button>
+        </div>
+
+        <div class="label">Model</div>
+        <select id="geminiModel">
+          <option value="gemini-2.5-flash-native-audio-preview-12-2025">gemini-2.5-flash-native-audio-preview-12-2025</option>
+          <option value="gemini-live-2.5-flash-preview">gemini-live-2.5-flash-preview</option>
+        </select>
+
+        <div class="label">Live session</div>
+        <div class="row">
+          <button id="geminiConnectBtn">Connect</button>
+          <button id="geminiDisconnectBtn" class="danger">Disconnect</button>
+        </div>
+
+        <div class="label">Audio diagnostics</div>
+        <div class="metrics">
+          <div class="metric">
+            <div class="metric-label">Playback</div>
+            <div class="metric-value" id="geminiPlaybackState">idle</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Speaker chunks</div>
+            <div class="metric-value" id="geminiAudioChunkCount">0</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Player context</div>
+            <div class="metric-value" id="geminiPlayerContextState">not created</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Mic context</div>
+            <div class="metric-value" id="geminiMicContextState">not created</div>
+          </div>
+        </div>
+
+        <div class="label">Transcript</div>
+        <textarea id="geminiLog" class="log" readonly></textarea>
+        <div class="status" id="geminiStatus">Idle</div>
+      </section>
+
+      <section class="panel hidden" id="openaiPanel">
+        <div class="panel-head">
+          <div class="panel-title" style="color: var(--accent-2);">OpenAI Live</div>
+          <div class="badge">text + selectable model</div>
+        </div>
+
+        <div class="label">API key</div>
+        <div class="row">
+          <input id="openaiApiKey" type="password" placeholder="Paste OpenAI API key" />
+          <button id="openaiSaveKey" class="secondary">Save</button>
+        </div>
+
+        <div class="label">Model</div>
+        <select id="openaiModel">
+          <option value="gpt-4.1">gpt-4.1</option>
+          <option value="gpt-4.1-mini">gpt-4.1-mini</option>
+          <option value="gpt-4o">gpt-4o</option>
+          <option value="gpt-4o-mini">gpt-4o-mini</option>
+          <option value="gpt-4o-realtime-preview-2024-12-17">gpt-4o-realtime-preview-2024-12-17</option>
+          <option value="gpt-4o-mini-realtime-preview-2024-12-17">gpt-4o-mini-realtime-preview-2024-12-17</option>
+        </select>
+
+        <div class="label">Session</div>
+        <div class="row">
+          <button id="openaiConnectBtn" class="secondary">Connect</button>
+          <button id="openaiDisconnectBtn" class="danger">Disconnect</button>
+        </div>
+
+        <div class="label">Prompt</div>
+        <div class="stack">
+          <textarea id="openaiPrompt" rows="3" placeholder="Type a prompt to send after connect, or send manual messages below.">You are a concise real-time assistant. Greet the user briefly when they connect.</textarea>
+          <div class="row">
+            <input id="openaiMessage" type="text" placeholder="Send a text message" />
+            <button id="openaiSendBtn" class="secondary">Send</button>
+          </div>
+        </div>
+
+        <div class="label">Diagnostics</div>
+        <div class="metrics">
+          <div class="metric">
+            <div class="metric-label">Connection</div>
+            <div class="metric-value" id="openaiSocketState">closed</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Events</div>
+            <div class="metric-value" id="openaiEventCount">0</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Session</div>
+            <div class="metric-value" id="openaiSessionState">idle</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Mode</div>
+            <div class="metric-value" id="openaiModeState">text only</div>
+          </div>
+        </div>
+
+        <div class="label">Transcript</div>
+        <textarea id="openaiLog" class="log" readonly></textarea>
+        <div class="status" id="openaiStatus">Idle</div>
+      </section>
+
+      <section class="footer-panel help" id="infoPanel">
+        <div><strong>Notes</strong></div>
+        <div id="infoText">Gemini uses mic/audio live mode. Switch providers from the top bar to use OpenAI instead.</div>
+      </section>
+    </main>
+  </div>
+
+<script type="module">
+  import { GoogleGenAI, Modality } from 'https://esm.sh/@google/genai@1.29.0';
+
+  const GEMINI_STORAGE_KEY = 'gemini-api-key';
+  const OPENAI_STORAGE_KEY = 'openai-api-key';
+  const PROVIDER_STORAGE_KEY = 'ai-live-provider';
+
+  let visibilityState = 'active';
+  let activeProvider = localStorage.getItem(PROVIDER_STORAGE_KEY) || 'gemini';
+
+  class AudioProcessor {
+    constructor(onAudioData, onStateChange) {
+      this.onAudioData = onAudioData;
+      this.onStateChange = onStateChange;
+      this.audioContext = null;
+      this.stream = null;
+      this.processor = null;
+      this.source = null;
+    }
+
+    async start() {
+      this.audioContext = new AudioContext({ sampleRate: 16000 });
+      await this.audioContext.resume();
+      this.onStateChange?.(this.audioContext.state);
+      this.audioContext.onstatechange = () => this.onStateChange?.(this.audioContext.state);
+      this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      this.source = this.audioContext.createMediaStreamSource(this.stream);
+      this.processor = this.audioContext.createScriptProcessor(4096, 1, 1);
+      this.source.connect(this.processor);
+      this.processor.connect(this.audioContext.destination);
+      this.processor.onaudioprocess = (e) => {
+        const inputData = e.inputBuffer.getChannelData(0);
+        const pcmData = this.floatTo16BitPCM(inputData);
+        const base64Data = this.arrayBufferToBase64(pcmData.buffer);
+        this.onAudioData(base64Data);
+      };
+    }
+
+    async resume() {
+      if (!this.audioContext) return;
+      await this.audioContext.resume();
+      this.onStateChange?.(this.audioContext.state);
+    }
+
+    stop() {
+      this.processor?.disconnect();
+      this.source?.disconnect();
+      this.stream?.getTracks().forEach(track => track.stop());
+      this.audioContext?.close();
+      this.processor = null;
+      this.source = null;
+      this.stream = null;
+      this.audioContext = null;
+      this.onStateChange?.('not created');
+    }
+
+    floatTo16BitPCM(float32Array) {
+      const buffer = new Int16Array(float32Array.length);
+      for (let i = 0; i < float32Array.length; i++) {
+        const s = Math.max(-1, Math.min(1, float32Array[i]));
+        buffer[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+      }
+      return buffer;
+    }
+
+    arrayBufferToBase64(buffer) {
+      let binary = '';
+      const bytes = new Uint8Array(buffer);
+      const len = bytes.byteLength;
+      for (let i = 0; i < len; i++) binary += String.fromCharCode(bytes[i]);
+      return window.btoa(binary);
+    }
+  }
+
+  class AudioPlayer {
+    constructor(onStateChange) {
+      this.onStateChange = onStateChange;
+      this.audioContext = null;
+      this.nextStartTime = 0;
+      this.createContext();
+    }
+
+    createContext() {
+      this.audioContext = new AudioContext({ sampleRate: 24000 });
+      this.nextStartTime = 0;
+      this.onStateChange?.(this.audioContext.state);
+      this.audioContext.onstatechange = () => this.onStateChange?.(this.audioContext.state);
+    }
+
+    async resume() {
+      if (!this.audioContext) this.createContext();
+      await this.audioContext.resume();
+      this.onStateChange?.(this.audioContext.state);
+    }
+
+    async playChunk(base64Data) {
+      if (!this.audioContext) this.createContext();
+      await this.resume();
+      const arrayBuffer = this.base64ToArrayBuffer(base64Data);
+      const pcmData = new Int16Array(arrayBuffer);
+      const float32Data = new Float32Array(pcmData.length);
+      for (let i = 0; i < pcmData.length; i++) float32Data[i] = pcmData[i] / 32768.0;
+      const audioBuffer = this.audioContext.createBuffer(1, float32Data.length, 24000);
+      audioBuffer.getChannelData(0).set(float32Data);
+      const source = this.audioContext.createBufferSource();
+      source.buffer = audioBuffer;
+      source.connect(this.audioContext.destination);
+      const currentTime = this.audioContext.currentTime;
+      if (this.nextStartTime < currentTime) this.nextStartTime = currentTime;
+      source.start(this.nextStartTime);
+      this.nextStartTime += audioBuffer.duration;
+      return audioBuffer.duration;
+    }
+
+    async reset() {
+      if (this.audioContext) {
+        await this.audioContext.close();
+      }
+      this.createContext();
+    }
+
+    async stop() {
+      await this.reset();
+    }
+
+    base64ToArrayBuffer(base64) {
+      const binaryString = window.atob(base64);
+      const len = binaryString.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) bytes[i] = binaryString.charCodeAt(i);
+      return bytes.buffer;
+    }
+  }
+
+  function makeLogger(textarea) {
+    return (role, text) => {
+      textarea.value += `${role}: ${text}\n`;
+      textarea.scrollTop = textarea.scrollHeight;
+    };
+  }
+
+  const geminiEls = {
+    panel: document.getElementById('geminiPanel'),
+    apiKey: document.getElementById('geminiApiKey'),
+    saveKey: document.getElementById('geminiSaveKey'),
+    model: document.getElementById('geminiModel'),
+    connect: document.getElementById('geminiConnectBtn'),
+    disconnect: document.getElementById('geminiDisconnectBtn'),
+    log: document.getElementById('geminiLog'),
+    status: document.getElementById('geminiStatus'),
+    playback: document.getElementById('geminiPlaybackState'),
+    chunkCount: document.getElementById('geminiAudioChunkCount'),
+    playerContext: document.getElementById('geminiPlayerContextState'),
+    micContext: document.getElementById('geminiMicContextState')
+  };
+
+  const openaiEls = {
+    panel: document.getElementById('openaiPanel'),
+    apiKey: document.getElementById('openaiApiKey'),
+    saveKey: document.getElementById('openaiSaveKey'),
+    model: document.getElementById('openaiModel'),
+    connect: document.getElementById('openaiConnectBtn'),
+    disconnect: document.getElementById('openaiDisconnectBtn'),
+    prompt: document.getElementById('openaiPrompt'),
+    message: document.getElementById('openaiMessage'),
+    send: document.getElementById('openaiSendBtn'),
+    log: document.getElementById('openaiLog'),
+    status: document.getElementById('openaiStatus'),
+    socket: document.getElementById('openaiSocketState'),
+    events: document.getElementById('openaiEventCount'),
+    session: document.getElementById('openaiSessionState'),
+    mode: document.getElementById('openaiModeState')
+  };
+
+  const uiEls = {
+    tabGemini: document.getElementById('tabGemini'),
+    tabOpenAI: document.getElementById('tabOpenAI'),
+    toolbarNote: document.getElementById('toolbarNote'),
+    infoText: document.getElementById('infoText')
+  };
+
+  const geminiLog = makeLogger(geminiEls.log);
+  const openaiLog = makeLogger(openaiEls.log);
+
+  const geminiState = {
+    session: null,
+    audioProcessor: null,
+    audioPlayer: null,
+    audioChunkCount: 0
+  };
+
+  const openaiState = {
+    ws: null,
+    eventCount: 0,
+    connected: false,
+    awaitingResponse: false,
+    mode: 'idle'
+  };
+
+  function loadKeys() {
+    geminiEls.apiKey.value = localStorage.getItem(GEMINI_STORAGE_KEY) || '';
+    openaiEls.apiKey.value = localStorage.getItem(OPENAI_STORAGE_KEY) || '';
+  }
+
+  function saveGeminiKey() {
+    localStorage.setItem(GEMINI_STORAGE_KEY, geminiEls.apiKey.value.trim());
+    geminiEls.status.textContent = 'API key saved';
+    geminiEls.status.className = 'status ok';
+  }
+
+  function saveOpenAIKey() {
+    localStorage.setItem(OPENAI_STORAGE_KEY, openaiEls.apiKey.value.trim());
+    openaiEls.status.textContent = 'API key saved';
+    openaiEls.status.className = 'status ok';
+  }
+
+  function setGeminiStatus(text, tone = '') {
+    geminiEls.status.textContent = text;
+    geminiEls.status.className = `status ${tone}`.trim();
+  }
+
+  function setOpenAIStatus(text, tone = '') {
+    openaiEls.status.textContent = text;
+    openaiEls.status.className = `status ${tone}`.trim();
+  }
+
+  function setMetricValue(el, text, tone = '') {
+    el.textContent = text;
+    el.className = `metric-value ${tone}`.trim();
+  }
+
+  function updateProviderUI() {
+    const isGemini = activeProvider === 'gemini';
+    geminiEls.panel.classList.toggle('hidden', !isGemini);
+    openaiEls.panel.classList.toggle('hidden', isGemini);
+    uiEls.tabGemini.classList.toggle('active', isGemini);
+    uiEls.tabOpenAI.classList.toggle('active', !isGemini);
+    uiEls.toolbarNote.textContent = isGemini ? 'gemini selected' : 'openai selected';
+    uiEls.infoText.textContent = isGemini
+      ? 'Gemini uses mic/audio live mode. Switch providers from the top bar to use OpenAI instead.'
+      : 'OpenAI now supports selectable text models plus realtime models. Standard text models use HTTPS responses; realtime models use websocket text mode.';
+    localStorage.setItem(PROVIDER_STORAGE_KEY, activeProvider);
+  }
+
+  function switchProvider(provider) {
+    activeProvider = provider;
+    updateProviderUI();
+  }
+
+  function resetGeminiDiagnostics() {
+    geminiState.audioChunkCount = 0;
+    setMetricValue(geminiEls.chunkCount, '0');
+    setMetricValue(geminiEls.playback, 'idle');
+    setMetricValue(geminiEls.playerContext, 'not created');
+    setMetricValue(geminiEls.micContext, 'not created');
+  }
+
+  function resetOpenAIDiagnostics() {
+    openaiState.eventCount = 0;
+    openaiState.mode = 'idle';
+    setMetricValue(openaiEls.events, '0');
+    setMetricValue(openaiEls.socket, 'closed');
+    setMetricValue(openaiEls.session, 'idle');
+    setMetricValue(openaiEls.mode, 'text only');
+  }
+
+  function isOpenAIRealtimeModel(model) {
+    return model.includes('realtime');
+  }
+
+  async function resumeGeminiAudio() {
+    try {
+      await geminiState.audioPlayer?.resume();
+      await geminiState.audioProcessor?.resume();
+    } catch (err) {
+      console.error(err);
+      setGeminiStatus('Audio resume blocked by browser', 'warn');
+      setMetricValue(geminiEls.playback, 'resume blocked', 'warn');
+    }
+  }
+
+  function extractGeminiParts(message) {
+    return message?.serverContent?.modelTurn?.parts || [];
+  }
+
+  function getTimeOfDay() {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'morning';
+    if (hour < 18) return 'afternoon';
+    return 'evening';
+  }
+
+  async function handleGeminiFunctionCall(fnCall) {
+    if (!fnCall?.name) return;
+    geminiLog('tool-call', `${fnCall.name} ${JSON.stringify(fnCall.args || {})}`);
+
+    if (fnCall.name === 'getTimeOfDay') {
+      const result = getTimeOfDay();
+      geminiLog('tool:getTimeOfDay', result);
+      await geminiState.session?.sendToolResponse({
+        functionResponses: [{
+          id: fnCall.id,
+          name: fnCall.name,
+          response: { timeOfDay: result }
+        }]
+      });
+      setGeminiStatus('Tool call handled', 'ok');
+      return;
+    }
+
+    geminiLog('tool-error', `Unknown tool: ${fnCall.name}`);
+  }
+
+  async function connectGemini() {
+    if (geminiState.session) return;
+    const apiKey = geminiEls.apiKey.value.trim() || localStorage.getItem(GEMINI_STORAGE_KEY) || '';
+    if (!apiKey) {
+      setGeminiStatus('Add API key first', 'warn');
+      return;
+    }
+
+    resetGeminiDiagnostics();
+    setGeminiStatus('Connecting...');
+    setMetricValue(geminiEls.playback, 'arming audio', 'warn');
+
+    const ai = new GoogleGenAI({ apiKey });
+    geminiState.audioPlayer = new AudioPlayer((state) => {
+      const tone = state === 'running' ? 'ok' : (state === 'suspended' ? 'warn' : '');
+      setMetricValue(geminiEls.playerContext, state, tone);
+    });
+    await geminiState.audioPlayer.resume();
+
+    geminiState.audioProcessor = new AudioProcessor(
+      (base64Data) => {
+        if (geminiState.session && visibilityState === 'active') {
+          geminiState.session.sendRealtimeInput({
+            audio: { data: base64Data, mimeType: 'audio/pcm;rate=16000' }
+          });
+        }
+      },
+      (state) => {
+        const tone = state === 'running' ? 'ok' : (state === 'suspended' ? 'warn' : '');
+        setMetricValue(geminiEls.micContext, state, tone);
+      }
+    );
+
+    geminiState.session = await ai.live.connect({
+      model: geminiEls.model.value,
+      config: {
+        responseModalities: [Modality.AUDIO],
+        speechConfig: {
+          voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Zephyr' } }
+        },
+        systemInstruction: 'You are concise. If the user asks about the time of day, call the getTimeOfDay tool and tell the user the result. Start by saying hi!',
+        outputAudioTranscription: {},
+        inputAudioTranscription: {},
+        tools: [{
+          functionDeclarations: [{
+            name: 'getTimeOfDay',
+            description: 'Returns the current time of day as morning, afternoon, or evening.',
+            parameters: { type: 'object', properties: {} }
+          }]
+        }]
+      },
+      callbacks: {
+        onopen: async () => {
+          setGeminiStatus('Connected', 'ok');
+          setMetricValue(geminiEls.playback, 'waiting for audio');
+          await resumeGeminiAudio();
+          await geminiState.audioProcessor.start();
+        },
+        onmessage: async (message) => {
+          const parts = extractGeminiParts(message);
+
+          if (message.serverContent?.inputTranscription?.text) {
+            geminiLog('user', message.serverContent.inputTranscription.text);
+          }
+
+          for (const part of parts) {
+            const audio = part?.inlineData?.data;
+            const text = part?.text;
+            const fnCall = part?.functionCall;
+
+            if (audio) {
+              geminiState.audioChunkCount += 1;
+              setMetricValue(geminiEls.chunkCount, String(geminiState.audioChunkCount), 'ok');
+              try {
+                const duration = await geminiState.audioPlayer?.playChunk(audio);
+                setMetricValue(geminiEls.playback, `playing ${geminiState.audioChunkCount} chunk${geminiState.audioChunkCount === 1 ? '' : 's'} • ${duration?.toFixed(2) || '0.00'}s`, 'ok');
+              } catch (err) {
+                console.error(err);
+                setMetricValue(geminiEls.playback, 'playback error', 'err');
+                setGeminiStatus('Audio arrived but browser blocked playback', 'err');
+                geminiLog('debug', `playback error: ${err.message || err}`);
+              }
+            }
+
+            if (text) {
+              geminiLog('model', text);
+            }
+
+            if (fnCall) {
+              await handleGeminiFunctionCall(fnCall);
+            }
+          }
+
+          if (!parts.length && message?.toolCall) {
+            await handleGeminiFunctionCall(message.toolCall);
+          }
+
+          if (message.serverContent?.interrupted) {
+            await geminiState.audioPlayer?.stop();
+            setMetricValue(geminiEls.playback, 'interrupted', 'warn');
+          }
+        },
+        onclose: () => {
+          setGeminiStatus('Disconnected');
+          geminiState.audioProcessor?.stop();
+          geminiState.session = null;
+          setMetricValue(geminiEls.playback, geminiState.audioChunkCount > 0 ? 'stopped' : 'no audio received', geminiState.audioChunkCount > 0 ? '' : 'warn');
+        },
+        onerror: (err) => {
+          console.error(err);
+          setGeminiStatus('Connection error', 'err');
+          setMetricValue(geminiEls.playback, 'error', 'err');
+          geminiLog('debug', `connection error: ${err.message || err}`);
+        }
+      }
+    });
+  }
+
+  async function disconnectGemini() {
+    geminiState.session?.close();
+    geminiState.session = null;
+    geminiState.audioProcessor?.stop();
+    await geminiState.audioPlayer?.stop();
+    setGeminiStatus('Disconnected');
+    setMetricValue(geminiEls.playback, geminiState.audioChunkCount > 0 ? 'stopped' : 'idle');
+  }
+
+  function parseOpenAIEvent(evt) {
+    try {
+      return JSON.parse(evt.data);
+    } catch {
+      return null;
+    }
+  }
+
+  function bumpOpenAIEvents() {
+    openaiState.eventCount += 1;
+    setMetricValue(openaiEls.events, String(openaiState.eventCount), openaiState.eventCount > 0 ? 'ok' : '');
+  }
+
+  function sendOpenAIEvent(payload) {
+    if (!openaiState.ws || openaiState.ws.readyState !== WebSocket.OPEN) {
+      setOpenAIStatus('Socket is not open', 'warn');
+      return false;
+    }
+    openaiState.ws.send(JSON.stringify(payload));
+    return true;
+  }
+
+  async function sendOpenAITextCompletion(text) {
+    const apiKey = openaiEls.apiKey.value.trim() || localStorage.getItem(OPENAI_STORAGE_KEY) || '';
+    const trimmed = text.trim();
+    if (!trimmed) return;
+
+    if (!apiKey) {
+      setOpenAIStatus('Add API key first', 'warn');
+      return;
+    }
+
+    const model = openaiEls.model.value;
+    openaiLog('user', trimmed);
+    setOpenAIStatus('Requesting response...');
+    setMetricValue(openaiEls.session, 'requesting', 'warn');
+    setMetricValue(openaiEls.socket, 'https', 'ok');
+    setMetricValue(openaiEls.mode, 'text responses', 'ok');
+    openaiState.mode = 'text';
+    bumpOpenAIEvents();
+
+    try {
+      const response = await fetch('https://api.openai.com/v1/responses', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model,
+          input: [
+            {
+              role: 'system',
+              content: [{ type: 'input_text', text: openaiEls.prompt.value.trim() || 'You are a concise assistant.' }]
+            },
+            {
+              role: 'user',
+              content: [{ type: 'input_text', text: trimmed }]
+            }
+          ]
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        const msg = data.error?.message || `HTTP ${response.status}`;
+        openaiLog('error', msg);
+        setOpenAIStatus(msg, 'err');
+        setMetricValue(openaiEls.session, 'error', 'err');
+        return;
+      }
+
+      const textOutput = data.output_text || data.output?.flatMap(item => item.content || []).map(part => part.text).filter(Boolean).join('') || '';
+      openaiLog('model', textOutput || '[no text returned]');
+      setOpenAIStatus('Response complete', 'ok');
+      setMetricValue(openaiEls.session, 'complete', 'ok');
+    } catch (err) {
+      console.error(err);
+      openaiLog('error', err.message || String(err));
+      setOpenAIStatus('Request failed', 'err');
+      setMetricValue(openaiEls.session, 'error', 'err');
+    }
+  }
+
+  function sendOpenAIUserMessage(text) {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+
+    if (openaiState.mode === 'text' || !isOpenAIRealtimeModel(openaiEls.model.value)) {
+      sendOpenAITextCompletion(trimmed);
+      return;
+    }
+
+    const sentConversation = sendOpenAIEvent({
+      type: 'conversation.item.create',
+      item: {
+        type: 'message',
+        role: 'user',
+        content: [{ type: 'input_text', text: trimmed }]
+      }
+    });
+
+    if (!sentConversation) return;
+
+    sendOpenAIEvent({
+      type: 'response.create',
+      response: {
+        modalities: ['text']
+      }
+    });
+
+    openaiLog('user', trimmed);
+    openaiState.awaitingResponse = true;
+    setOpenAIStatus('Waiting for response...');
+  }
+
+  function handleOpenAIMessage(evt) {
+    bumpOpenAIEvents();
+    const data = parseOpenAIEvent(evt);
+    if (!data) {
+      openaiLog('debug', 'Received non-JSON event');
+      return;
+    }
+
+    const type = data.type || 'unknown';
+
+    if (type === 'session.created' || type === 'session.updated') {
+      setMetricValue(openaiEls.session, type === 'session.created' ? 'created' : 'updated', 'ok');
+      openaiLog('system', type);
+      return;
+    }
+
+    if (type === 'response.created') {
+      setOpenAIStatus('Response started', 'ok');
+      openaiLog('system', 'response created');
+      return;
+    }
+
+    if (type === 'response.output_text.delta' && data.delta) {
+      openaiEls.log.value += data.delta;
+      openaiEls.log.scrollTop = openaiEls.log.scrollHeight;
+      return;
+    }
+
+    if (type === 'response.output_text.done') {
+      openaiEls.log.value += '\n';
+      setOpenAIStatus('Response complete', 'ok');
+      openaiState.awaitingResponse = false;
+      return;
+    }
+
+    if (type === 'conversation.item.input_audio_transcription.completed' && data.transcript) {
+      openaiLog('user', data.transcript);
+      return;
+    }
+
+    if (type === 'error') {
+      const msg = data.error?.message || 'Unknown error';
+      openaiLog('error', msg);
+      setOpenAIStatus(msg, 'err');
+      return;
+    }
+
+    if (type === 'response.done') {
+      setOpenAIStatus('Response complete', 'ok');
+      openaiState.awaitingResponse = false;
+      return;
+    }
+
+    if (type === 'rate_limits.updated') {
+      openaiLog('system', 'rate limits updated');
+      return;
+    }
+
+    openaiLog('event', type);
+  }
+
+  function connectOpenAI() {
+    const apiKey = openaiEls.apiKey.value.trim() || localStorage.getItem(OPENAI_STORAGE_KEY) || '';
+    if (!apiKey) {
+      setOpenAIStatus('Add API key first', 'warn');
+      return;
+    }
+
+    resetOpenAIDiagnostics();
+    const selectedModel = openaiEls.model.value;
+
+    if (!isOpenAIRealtimeModel(selectedModel)) {
+      openaiState.mode = 'text';
+      setMetricValue(openaiEls.socket, 'https', 'ok');
+      setMetricValue(openaiEls.session, 'ready', 'ok');
+      setMetricValue(openaiEls.mode, 'text responses', 'ok');
+      setOpenAIStatus('Ready. Send a message to use the selected text model.', 'ok');
+      openaiLog('system', `ready for text model ${selectedModel}`);
+      return;
+    }
+
+    if (openaiState.ws && (openaiState.ws.readyState === WebSocket.OPEN || openaiState.ws.readyState === WebSocket.CONNECTING)) return;
+
+    setOpenAIStatus('Connecting...');
+    setMetricValue(openaiEls.session, 'connecting', 'warn');
+    setMetricValue(openaiEls.mode, 'realtime text', 'ok');
+    openaiState.mode = 'realtime';
+
+    const model = encodeURIComponent(selectedModel);
+    const url = `wss://api.openai.com/v1/realtime?model=${model}`;
+
+    try {
+      const ws = new WebSocket(url, ['realtime', `openai-insecure-api-key.${apiKey}`, 'openai-beta.realtime-v1']);
+      openaiState.ws = ws;
+
+      ws.addEventListener('open', () => {
+        setMetricValue(openaiEls.socket, 'open', 'ok');
+        setMetricValue(openaiEls.session, 'connected', 'ok');
+        setOpenAIStatus('Connected', 'ok');
+        openaiLog('system', 'socket open');
+
+        sendOpenAIEvent({
+          type: 'session.update',
+          session: {
+            modalities: ['text'],
+            instructions: openaiEls.prompt.value.trim() || 'You are a concise realtime assistant.',
+            temperature: 0.8
+          }
+        });
+
+        const prompt = openaiEls.prompt.value.trim();
+        if (prompt) {
+          sendOpenAIUserMessage('Please greet me and briefly confirm the OpenAI realtime connection is working.');
+        }
+      });
+
+      ws.addEventListener('message', handleOpenAIMessage);
+
+      ws.addEventListener('close', () => {
+        setMetricValue(openaiEls.socket, 'closed');
+        setMetricValue(openaiEls.session, 'disconnected');
+        setOpenAIStatus('Disconnected');
+        openaiLog('system', 'socket closed');
+        openaiState.ws = null;
+        if (openaiState.mode === 'realtime') openaiState.mode = 'idle';
+      });
+
+      ws.addEventListener('error', (err) => {
+        console.error(err);
+        setMetricValue(openaiEls.socket, 'error', 'err');
+        setOpenAIStatus('Socket error. Browser-direct auth may be blocked.', 'err');
+        openaiLog('error', 'socket error');
+      });
+    } catch (err) {
+      console.error(err);
+      setOpenAIStatus(`Connect failed: ${err.message || err}`, 'err');
+      setMetricValue(openaiEls.socket, 'error', 'err');
+    }
+  }
+
+  function disconnectOpenAI() {
+    openaiState.ws?.close();
+    openaiState.ws = null;
+    openaiState.mode = 'idle';
+    setMetricValue(openaiEls.socket, 'closed');
+    setMetricValue(openaiEls.session, 'idle');
+    setMetricValue(openaiEls.mode, 'text only');
+    setOpenAIStatus('Disconnected');
+  }
+
+  uiEls.tabGemini.addEventListener('click', () => switchProvider('gemini'));
+  uiEls.tabOpenAI.addEventListener('click', () => switchProvider('openai'));
+
+  geminiEls.saveKey.addEventListener('click', saveGeminiKey);
+  geminiEls.connect.addEventListener('click', connectGemini);
+  geminiEls.disconnect.addEventListener('click', disconnectGemini);
+
+  openaiEls.saveKey.addEventListener('click', saveOpenAIKey);
+  openaiEls.connect.addEventListener('click', connectOpenAI);
+  openaiEls.disconnect.addEventListener('click', disconnectOpenAI);
+  openaiEls.send.addEventListener('click', () => {
+    sendOpenAIUserMessage(openaiEls.message.value);
+    openaiEls.message.value = '';
+    openaiEls.message.focus();
+  });
+  openaiEls.message.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      sendOpenAIUserMessage(openaiEls.message.value);
+      openaiEls.message.value = '';
+    }
+  });
+
+  window.addEventListener('message', async (e) => {
+    if (e.data?.type === 'slopos-visibility') {
+      visibilityState = e.data.state || 'active';
+      if (visibilityState !== 'active') {
+        await geminiState.audioPlayer?.stop();
+        setMetricValue(geminiEls.playback, 'paused in background', 'warn');
+      } else if (activeProvider === 'gemini') {
+        await resumeGeminiAudio();
+      }
+    }
+  });
+
+  resetGeminiDiagnostics();
+  resetOpenAIDiagnostics();
+  loadKeys();
+  if (activeProvider !== 'gemini' && activeProvider !== 'openai') activeProvider = 'gemini';
+  updateProviderUI();
+</script>
+</body>
+</html>
