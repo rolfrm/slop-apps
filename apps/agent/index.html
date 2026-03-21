@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agent</title>
+  <style>
+    :root {
+      --bg: #0f1923;
+      --bg-surface: #13202e;
+      --bg-elevated: #182838;
+      --bg-hover: #1d3146;
+      --border: rgba(80, 140, 190, 0.35);
+      --text: #e0e8f0;
+      --text-dim: #8da2b8;
+      --accent: #60a5fa;
+      --accent-2: #34d399;
+      --accent-glow: rgba(96, 165, 250, 0.18);
+      --danger: #ff6b6b;
+      --warning: #fbbf24;
+      --radius: 10px;
+      --shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      background: linear-gradient(180deg, #0c141d 0%, #0f1923 100%);
+      color: var(--text);
+      min-height: 100vh;
+      overflow: hidden;
+    }
+
+    button, input, textarea, select { font: inherit; }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+
+    .title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--accent);
+      text-shadow: 0 0 12px var(--accent-glow);
+    }
+
+    .toolbar-note {
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+
+    .spacer { margin-left: auto; }
+
+    .content {
+      display: grid;
+      grid-template-columns: 320px minmax(0, 1fr);
+      gap: 14px;
+      padding: 14px;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .panel {
+      min-width: 0;
+      padding: 16px;
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, rgba(24, 40, 56, 0.92), rgba(19, 32, 46, 0.96));
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-height: 0;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .panel-title {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: var(--accent);
+    }
+
+    .badge {
+      font-size: 10px;
+      color: var(--text-dim);
+      border: 1px solid var(--border);
+      background: rgba(8, 14, 22, 0.4);
+      border-radius: 999px;
+      padding: 4px 8px;
+    }
+
+    .label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1.4px;
+      color: var(--text-dim);
+    }
+
+    .row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .stack {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    input, textarea, select, button {
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: rgba(8, 14, 22, 0.65);
+      color: var(--text);
+      padding: 11px 12px;
+    }
+
+    input, textarea, select {
+      width: 100%;
+    }
+
+    textarea {
+      resize: vertical;
+    }
+
+    input:focus, textarea:focus, select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.12);
+    }
+
+    button {
+      cursor: pointer;
+      transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+      white-space: nowrap;
+    }
+
+    button:hover {
+      background: var(--bg-hover);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    button:active { transform: translateY(1px); }
+    button.secondary:hover { border-color: var(--accent-2); color: var(--accent-2); }
+    button.danger:hover { border-color: var(--danger); color: var(--danger); }
+
+    .hint {
+      font-size: 11px;
+      line-height: 1.5;
+      color: var(--text-dim);
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .metric {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: rgba(8, 14, 22, 0.38);
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .metric-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1.1px;
+      color: var(--text-dim);
+    }
+
+    .metric-value {
+      font-size: 12px;
+      color: var(--text);
+      word-break: break-word;
+    }
+
+    .ok { color: var(--accent-2); }
+    .warn { color: var(--warning); }
+    .err { color: var(--danger); }
+
+    .chat-wrap {
+      display: grid;
+      grid-template-rows: 1fr auto;
+      min-height: 0;
+      gap: 12px;
+    }
+
+    .messages {
+      overflow: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding-right: 4px;
+    }
+
+    .message {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: rgba(8, 14, 22, 0.42);
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .message.user { border-color: rgba(96, 165, 250, 0.45); }
+    .message.assistant { border-color: rgba(52, 211, 153, 0.35); }
+    .message.tool { border-color: rgba(251, 191, 36, 0.35); }
+    .message.system { border-color: rgba(141, 162, 184, 0.35); }
+    .message.error { border-color: rgba(255, 107, 107, 0.45); }
+
+    .message-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .message-body {
+      font-size: 12px;
+      line-height: 1.55;
+      color: var(--text);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .composer {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+    }
+
+    .composer textarea {
+      min-height: 96px;
+      max-height: 220px;
+    }
+
+    .composer-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 160px;
+    }
+
+    .statusbar {
+      padding: 10px 14px;
+      border-top: 1px solid var(--border);
+      background: var(--bg-surface);
+      font-size: 11px;
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--text-dim);
+      display: inline-block;
+    }
+
+    .dot.ok { background: var(--accent-2); }
+    .dot.warn { background: var(--warning); }
+    .dot.err { background: var(--danger); }
+
+    ::-webkit-scrollbar { width: 10px; height: 10px; }
+    ::-webkit-scrollbar-track { background: rgba(8, 14, 22, 0.4); }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(96, 165, 250, 0.28);
+      border-radius: 999px;
+      border: 2px solid rgba(8, 14, 22, 0.35);
+    }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(96, 165, 250, 0.42); }
+
+    @media (max-width: 900px) {
+      body { overflow: auto; }
+      .content { grid-template-columns: 1fr; overflow: auto; }
+      .composer { grid-template-columns: 1fr; }
+      .composer-actions { width: 100%; flex-direction: row; }
+      .composer-actions button { flex: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="toolbar">
+      <div class="title">&gt;_ agent</div>
+      <div class="toolbar-note">openai tool-using chatbot • webfetch enabled</div>
+      <div class="spacer"></div>
+      <button id="clearChatBtn" class="danger">Clear Chat</button>
+    </header>
+
+    <main class="content">
+      <section class="panel">
+        <div class="panel-head">
+          <div class="panel-title">Settings</div>
+          <div class="badge">gpt-5.4</div>
+        </div>
+
+        <div class="label">OpenAI API token</div>
+        <div class="row">
+          <input id="apiKeyInput" type="password" placeholder="Paste OpenAI API token" />
+          <button id="saveKeyBtn" class="secondary">Save</button>
+        </div>
+
+        <div class="label">Model</div>
+        <input id="modelInput" type="text" value="gpt-5.4" />
+
+        <div class="label">System prompt</div>
+        <textarea id="systemPromptInput">You are Agent, a concise but capable AI assistant inside SlopOS. You can browse the web using the webfetch tool when needed. Use the tool only when it helps answer the user accurately. When you use webfetch, explain briefly what you checked. Keep answers clear and practical.</textarea>
+
+        <div class="label">Tooling</div>
+        <div class="metrics">
+          <div class="metric">
+            <div class="metric-label">Available tool</div>
+            <div class="metric-value ok">webfetch</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Messages</div>
+            <div class="metric-value" id="messageCount">0</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Tool calls</div>
+            <div class="metric-value" id="toolCount">0</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">State</div>
+            <div class="metric-value" id="runState">idle</div>
+          </div>
+        </div>
+
+        <div class="stack">
+          <button id="savePrefsBtn">Save Preferences</button>
+        </div>
+      </section>
+
+      <section class="panel chat-wrap">
+        <div class="panel-head">
+          <div class="panel-title">Chat</div>
+          <div class="badge" id="lastToolBadge">no tool use yet</div>
+        </div>
+
+        <div class="messages" id="messages"></div>
+
+        <div class="composer">
+          <textarea id="userInput" placeholder="Ask anything. Example: Find the latest news about WebAssembly and summarize it."></textarea>
+          <div class="composer-actions">
+            <button id="sendBtn">Send</button>
+            <button id="stopBtn" class="danger">Stop</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="statusbar">
+      <span class="dot" id="statusDot"></span>
+      <span id="statusText">Idle</span>
+    </footer>
+  </div>
+
+  <script>
+    const STORAGE_KEYS = {
+      apiKey: 'openai-api-key',
+      model: 'openai-model',
+      systemPrompt: 'system-prompt',
+      messages: 'chat-messages',
+      stats: 'chat-stats'
+    };
+
+    const els = {
+      apiKeyInput: document.getElementById('apiKeyInput'),
+      saveKeyBtn: document.getElementById('saveKeyBtn'),
+      modelInput: document.getElementById('modelInput'),
+      systemPromptInput: document.getElementById('systemPromptInput'),
+      savePrefsBtn: document.getElementById('savePrefsBtn'),
+      clearChatBtn: document.getElementById('clearChatBtn'),
+      messageCount: document.getElementById('messageCount'),
+      toolCount: document.getElementById('toolCount'),
+      runState: document.getElementById('runState'),
+      lastToolBadge: document.getElementById('lastToolBadge'),
+      messages: document.getElementById('messages'),
+      userInput: document.getElementById('userInput'),
+      sendBtn: document.getElementById('sendBtn'),
+      stopBtn: document.getElementById('stopBtn'),
+      statusDot: document.getElementById('statusDot'),
+      statusText: document.getElementById('statusText')
+    };
+
+    let state = {
+      messages: [],
+      running: false,
+      abortController: null,
+      visibility: 'active',
+      toolCalls: 0,
+      lastTool: 'no tool use yet'
+    };
+
+    function escapeHtml(text) {
+      return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function setStatus(text, tone = '') {
+      els.statusText.textContent = text;
+      els.statusDot.className = `dot ${tone}`.trim();
+      els.runState.textContent = text.toLowerCase();
+      els.runState.className = `metric-value ${tone}`.trim();
+    }
+
+    function updateStats() {
+      els.messageCount.textContent = String(state.messages.filter(m => m.role !== 'tool').length);
+      els.toolCount.textContent = String(state.toolCalls);
+      els.lastToolBadge.textContent = state.lastTool;
+    }
+
+    function formatTime(ts) {
+      return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function renderMessages() {
+      els.messages.innerHTML = '';
+      state.messages.forEach(msg => {
+        const div = document.createElement('div');
+        div.className = `message ${msg.kind || msg.role || 'system'}`;
+        div.innerHTML = `
+          <div class="message-head">
+            <span>${escapeHtml(msg.label || msg.role || 'message')}</span>
+            <span>${escapeHtml(formatTime(msg.ts || Date.now()))}</span>
+          </div>
+          <div class="message-body">${escapeHtml(msg.text || '')}</div>
+        `;
+        els.messages.appendChild(div);
+      });
+      els.messages.scrollTop = els.messages.scrollHeight;
+      updateStats();
+    }
+
+    async function saveState() {
+      await appStorage.setItem(STORAGE_KEYS.messages, JSON.stringify(state.messages));
+      await appStorage.setItem(STORAGE_KEYS.stats, JSON.stringify({ toolCalls: state.toolCalls, lastTool: state.lastTool }));
+    }
+
+    async function loadState() {
+      const [apiKey, model, systemPrompt, rawMessages, rawStats] = await Promise.all([
+        appStorage.getItem(STORAGE_KEYS.apiKey),
+        appStorage.getItem(STORAGE_KEYS.model),
+        appStorage.getItem(STORAGE_KEYS.systemPrompt),
+        appStorage.getItem(STORAGE_KEYS.messages),
+        appStorage.getItem(STORAGE_KEYS.stats)
+      ]);
+
+      els.apiKeyInput.value = apiKey || '';
+      els.modelInput.value = model || 'gpt-5.4';
+      els.systemPromptInput.value = systemPrompt || els.systemPromptInput.value;
+
+      if (rawMessages) {
+        try { state.messages = JSON.parse(rawMessages) || []; } catch {}
+      }
+      if (rawStats) {
+        try {
+          const stats = JSON.parse(rawStats) || {};
+          state.toolCalls = Number(stats.toolCalls || 0);
+          state.lastTool = stats.lastTool || 'no tool use yet';
+        } catch {}
+      }
+
+      if (!state.messages.length) {
+        state.messages.push({
+          role: 'system',
+          kind: 'system',
+          label: 'system',
+          text: 'Agent ready. Configure your OpenAI API token, then start chatting.',
+          ts: Date.now()
+        });
+      }
+
+      renderMessages();
+      setStatus('Idle');
+    }
+
+    function addMessage(role, text, kind = role, label = role) {
+      state.messages.push({ role, text, kind, label, ts: Date.now() });
+      renderMessages();
+      saveState();
+    }
+
+    async function savePrefs() {
+      await Promise.all([
+        appStorage.setItem(STORAGE_KEYS.apiKey, els.apiKeyInput.value.trim()),
+        appStorage.setItem(STORAGE_KEYS.model, els.modelInput.value.trim() || 'gpt-5.4'),
+        appStorage.setItem(STORAGE_KEYS.systemPrompt, els.systemPromptInput.value.trim())
+      ]);
+      setStatus('Preferences saved', 'ok');
+    }
+
+    function toOpenAIInput(messages) {
+      const out = [];
+      const systemPrompt = els.systemPromptInput.value.trim();
+      if (systemPrompt) {
+        out.push({
+          role: 'system',
+          content: [{ type: 'input_text', text: systemPrompt }]
+        });
+      }
+
+      for (const msg of messages) {
+        if (msg.role === 'user' || msg.role === 'assistant') {
+          out.push({
+            role: msg.role,
+            content: [{ type: msg.role === 'user' ? 'input_text' : 'output_text', text: msg.text }]
+          });
+        }
+      }
+      return out;
+    }
+
+    function extractTextFromResponse(data) {
+      if (typeof data.output_text === 'string' && data.output_text.trim()) return data.output_text.trim();
+      const parts = [];
+      for (const item of data.output || []) {
+        for (const content of item.content || []) {
+          if (typeof content.text === 'string') parts.push(content.text);
+        }
+      }
+      return parts.join('\n').trim();
+    }
+
+    function extractFunctionCalls(data) {
+      const calls = [];
+      for (const item of data.output || []) {
+        if (item.type === 'function_call') {
+          calls.push({
+            id: item.call_id || item.id || `call_${Math.random().toString(36).slice(2)}`,
+            name: item.name,
+            arguments: item.arguments || '{}'
+          });
+        }
+      }
+      return calls;
+    }
+
+    async function callOpenAI(payload, signal) {
+      const apiKey = els.apiKeyInput.value.trim();
+      if (!apiKey) throw new Error('Missing OpenAI API token.');
+
+      const res = await fetch('https://api.openai.com/v1/responses', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify(payload),
+        signal
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error?.message || `HTTP ${res.status}`);
+      }
+      return data;
+    }
+
+    async function runWebFetch(args) {
+      const url = args?.url;
+      if (!url || typeof url !== 'string') {
+        throw new Error('webfetch requires a url string.');
+      }
+      const text = await webFetch(url);
+      return {
+        url,
+        content: text
+      };
+    }
+
+    async function webFetch(url) {
+      return await (await fetchTool(url));
+    }
+
+    async function fetchTool(url) {
+      return functions_web_fetch(url);
+    }
+
+    async function functions_web_fetch(url) {
+      return await window.__slopos_webfetch(url);
+    }
+
+    window.__slopos_webfetch = async function(url) {
+      throw new Error('webfetch bridge not initialized');
+    };
+
+    async function runAgentTurn(userText) {
+      if (state.running) return;
+      const model = els.modelInput.value.trim() || 'gpt-5.4';
+      state.running = true;
+      state.abortController = new AbortController();
+      setStatus('Running', 'warn');
+
+      addMessage('user', userText, 'user', 'user');
+
+      const conversation = state.messages.filter(msg => msg.role === 'user' || msg.role === 'assistant');
+      let input = toOpenAIInput(conversation);
+      let guard = 0;
+
+      try {
+        while (guard < 8) {
+          guard += 1;
+          const response = await callOpenAI({
+            model,
+            input,
+            tools: [{
+              type: 'function',
+              name: 'webfetch',
+              description: 'Fetches the text contents of a URL and returns up to the first 50KB. Use this to read web pages or docs.',
+              parameters: {
+                type: 'object',
+                properties: {
+                  url: {
+                    type: 'string',
+                    description: 'The absolute URL to fetch, including https://'
+                  }
+                },
+                required: ['url'],
+                additionalProperties: false
+              }
+            }],
+            tool_choice: 'auto'
+          }, state.abortController.signal);
+
+          const functionCalls = extractFunctionCalls(response);
+          const assistantText = extractTextFromResponse(response);
+
+          if (assistantText) {
+            addMessage('assistant', assistantText, 'assistant', 'assistant');
+          }
+
+          if (!functionCalls.length) {
+            setStatus('Complete', 'ok');
+            break;
+          }
+
+          for (const call of functionCalls) {
+            let args = {};
+            try {
+              args = JSON.parse(call.arguments || '{}');
+            } catch {
+              throw new Error(`Invalid tool arguments for ${call.name}`);
+            }
+
+            state.toolCalls += 1;
+            state.lastTool = `${call.name} ${args.url ? '• ' + args.url : ''}`;
+            updateStats();
+            addMessage('tool', `Calling ${call.name} with ${JSON.stringify(args, null, 2)}`, 'tool', 'tool call');
+
+            let toolResult;
+            if (call.name === 'webfetch') {
+              toolResult = await runWebFetch(args);
+            } else {
+              throw new Error(`Unknown tool: ${call.name}`);
+            }
+
+            const toolText = JSON.stringify(toolResult, null, 2);
+            addMessage('tool', toolText, 'tool', 'tool result');
+
+            input = [
+              ...input,
+              ...response.output,
+              {
+                type: 'function_call_output',
+                call_id: call.id,
+                output: toolText
+              }
+            ];
+          }
+        }
+
+        if (guard >= 8) {
+          addMessage('error', 'Stopped after too many tool iterations.', 'error', 'error');
+          setStatus('Stopped', 'warn');
+        }
+      } catch (err) {
+        if (err.name === 'AbortError') {
+          addMessage('system', 'Request stopped.', 'system', 'system');
+          setStatus('Stopped', 'warn');
+        } else {
+          addMessage('error', err.message || String(err), 'error', 'error');
+          setStatus('Error', 'err');
+        }
+      } finally {
+        state.running = false;
+        state.abortController = null;
+        saveState();
+      }
+    }
+
+    els.saveKeyBtn.addEventListener('click', savePrefs);
+    els.savePrefsBtn.addEventListener('click', savePrefs);
+
+    els.sendBtn.addEventListener('click', () => {
+      const text = els.userInput.value.trim();
+      if (!text) return;
+      els.userInput.value = '';
+      runAgentTurn(text);
+    });
+
+    els.userInput.addEventListener('keydown', (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+        e.preventDefault();
+        els.sendBtn.click();
+      }
+    });
+
+    els.stopBtn.addEventListener('click', () => {
+      state.abortController?.abort();
+    });
+
+    els.clearChatBtn.addEventListener('click', async () => {
+      state.messages = [{
+        role: 'system',
+        kind: 'system',
+        label: 'system',
+        text: 'Chat cleared.',
+        ts: Date.now()
+      }];
+      state.toolCalls = 0;
+      state.lastTool = 'no tool use yet';
+      renderMessages();
+      await saveState();
+      setStatus('Idle');
+    });
+
+    window.addEventListener('message', (e) => {
+      if (e.data?.type === 'slopos-visibility') {
+        state.visibility = e.data.state || 'active';
+        if (state.visibility !== 'active' && state.running) {
+          setStatus('Backgrounded', 'warn');
+        } else if (state.visibility === 'active' && !state.running) {
+          setStatus('Idle');
+        }
+      }
+    });
+
+    window.parent.postMessage({ type: 'slopos-get-visibility' }, '*');
+
+    loadState();
+  </script>
+</body>
+</html>
