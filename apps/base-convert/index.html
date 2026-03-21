@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#a78bfa">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="../icons/uconvert.svg">
+  <link rel="apple-touch-icon" href="../icons/uconvert.png">
+  <title>uconvert</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0e1a;
+      --surface: #111827;
+      --surface2: #1a2236;
+      --border: #1e2940;
+      --text: #d0d8e8;
+      --text-dim: #6b7a94;
+      --accent: #a78bfa;
+      --accent-dim: rgba(167, 139, 250, 0.1);
+      --radius: 8px;
+    }
+
+    body {
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 720px;
+      width: 100%;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .subtitle {
+      color: var(--text-dim);
+      font-size: 0.85rem;
+      margin-bottom: 24px;
+    }
+
+    .input-section {
+      margin-bottom: 24px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    textarea {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.95rem;
+      padding: 12px;
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    select {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.85rem;
+      padding: 8px 12px;
+      cursor: pointer;
+      min-width: 120px;
+    }
+
+    select:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .outputs {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .output-row {
+      display: flex;
+      align-items: stretch;
+      gap: 0;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .output-label {
+      display: flex;
+      align-items: center;
+      width: 90px;
+      min-width: 90px;
+      padding: 10px 12px;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--accent);
+      background: var(--surface2);
+      border-right: 1px solid var(--border);
+    }
+
+    .output-value {
+      flex: 1;
+      padding: 10px 12px;
+      font-size: 0.88rem;
+      word-break: break-all;
+      line-height: 1.5;
+      min-height: 40px;
+      max-height: 4.5em;
+      overflow-y: auto;
+      color: var(--text);
+    }
+
+    .output-value.error {
+      color: #f87171;
+      font-style: italic;
+    }
+
+    .copy-btn {
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      background: none;
+      border: none;
+      border-left: 1px solid var(--border);
+      color: var(--text-dim);
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-family: inherit;
+      transition: color 0.15s, background 0.15s;
+    }
+
+    .copy-btn:hover {
+      color: var(--accent);
+      background: var(--accent-dim);
+    }
+
+    .sep {
+      height: 1px;
+      background: var(--border);
+      margin: 16px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>uconvert</h1>
+    <p class="subtitle">Convert between number bases and encodings. All data stays on your device.</p>
+
+    <div class="input-section">
+      <label>Input</label>
+      <div class="input-row">
+        <textarea id="input" placeholder="Enter a number or text..." spellcheck="false"></textarea>
+        <select id="input-format">
+          <option value="auto">Auto-detect</option>
+          <option value="decimal">Decimal</option>
+          <option value="hex">Hexadecimal</option>
+          <option value="octal">Octal</option>
+          <option value="binary">Binary</option>
+          <option value="text">Text (UTF-8)</option>
+          <option value="base64">Base64</option>
+          <option value="base32">Base32</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="sep"></div>
+
+    <div class="outputs" id="outputs"></div>
+  </div>
+
+  <script>
+    const inputEl = document.getElementById('input');
+    const formatEl = document.getElementById('input-format');
+    const outputsEl = document.getElementById('outputs');
+
+    const FORMATS = ['decimal', 'hex', 'octal', 'binary', 'text', 'base64', 'base32'];
+
+    const B32 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+
+    function base32Encode(bytes) {
+      let bits = '';
+      for (const b of bytes) bits += b.toString(2).padStart(8, '0');
+      let out = '';
+      for (let i = 0; i < bits.length; i += 5) {
+        const chunk = bits.slice(i, i + 5).padEnd(5, '0');
+        out += B32[parseInt(chunk, 2)];
+      }
+      while (out.length % 8 !== 0) out += '=';
+      return out;
+    }
+
+    function base32Decode(str) {
+      str = str.replace(/=+$/, '').toUpperCase();
+      let bits = '';
+      for (const c of str) {
+        const idx = B32.indexOf(c);
+        if (idx === -1) return null;
+        bits += idx.toString(2).padStart(5, '0');
+      }
+      const bytes = [];
+      for (let i = 0; i + 8 <= bits.length; i += 8) {
+        bytes.push(parseInt(bits.slice(i, i + 8), 2));
+      }
+      return new Uint8Array(bytes);
+    }
+
+    function textToBytes(text) {
+      return new TextEncoder().encode(text);
+    }
+
+    function bytesToText(bytes) {
+      return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+    }
+
+    function bytesToBigInt(bytes) {
+      if (bytes.length === 0) return 0n;
+      let hex = '';
+      for (const b of bytes) hex += b.toString(16).padStart(2, '0');
+      return BigInt('0x' + hex);
+    }
+
+    function bigIntToBytes(n) {
+      if (n === 0n) return new Uint8Array([0]);
+      let hex = n.toString(16);
+      if (hex.length % 2) hex = '0' + hex;
+      const bytes = [];
+      for (let i = 0; i < hex.length; i += 2) {
+        bytes.push(parseInt(hex.slice(i, i + 2), 16));
+      }
+      return new Uint8Array(bytes);
+    }
+
+    // Parse input into bytes based on format
+    function parseInput(raw, fmt) {
+      raw = raw.trim();
+      if (!raw) return null;
+
+      if (fmt === 'auto') fmt = detectFormat(raw);
+
+      switch (fmt) {
+        case 'decimal': {
+          try {
+            const n = BigInt(raw);
+            if (n < 0n) return null;
+            return { bytes: bigIntToBytes(n), numeric: true, value: n };
+          } catch { return null; }
+        }
+        case 'hex': {
+          let h = raw.replace(/^0x/i, '').replace(/\s+/g, '');
+          if (!/^[0-9a-fA-F]+$/.test(h)) return null;
+          if (h.length % 2) h = '0' + h;
+          const bytes = [];
+          for (let i = 0; i < h.length; i += 2)
+            bytes.push(parseInt(h.slice(i, i + 2), 16));
+          return { bytes: new Uint8Array(bytes), numeric: true, value: bytesToBigInt(new Uint8Array(bytes)) };
+        }
+        case 'octal': {
+          const clean = raw.replace(/^0o/i, '');
+          if (!/^[0-7]+$/.test(clean)) return null;
+          try {
+            const n = BigInt('0o' + clean);
+            return { bytes: bigIntToBytes(n), numeric: true, value: n };
+          } catch { return null; }
+        }
+        case 'binary': {
+          const clean = raw.replace(/^0b/i, '').replace(/\s+/g, '');
+          if (!/^[01]+$/.test(clean)) return null;
+          try {
+            const n = BigInt('0b' + clean);
+            return { bytes: bigIntToBytes(n), numeric: true, value: n };
+          } catch { return null; }
+        }
+        case 'text': {
+          const bytes = textToBytes(raw);
+          return { bytes, numeric: false, value: bytesToBigInt(bytes) };
+        }
+        case 'base64': {
+          try {
+            const bin = atob(raw);
+            const bytes = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+            return { bytes, numeric: false, value: bytesToBigInt(bytes) };
+          } catch { return null; }
+        }
+        case 'base32': {
+          const bytes = base32Decode(raw);
+          if (!bytes) return null;
+          return { bytes, numeric: false, value: bytesToBigInt(bytes) };
+        }
+      }
+      return null;
+    }
+
+    function detectFormat(raw) {
+      if (/^0x[0-9a-fA-F]+$/i.test(raw)) return 'hex';
+      if (/^0b[01]+$/i.test(raw)) return 'binary';
+      if (/^0o[0-7]+$/i.test(raw)) return 'octal';
+      if (/^[0-9]+$/.test(raw)) return 'decimal';
+      if (/^[01\s]{4,}$/.test(raw)) return 'binary';
+      if (/^[0-9a-fA-F\s]+$/.test(raw) && raw.length >= 2 && /[a-fA-F]/.test(raw)) return 'hex';
+      if (/^[A-Z2-7]+=*$/i.test(raw) && raw.length >= 8) return 'base32';
+      try { atob(raw); if (raw.length >= 4 && /^[A-Za-z0-9+/]+=*$/.test(raw)) return 'base64'; } catch {}
+      return 'text';
+    }
+
+    function formatOutput(parsed, fmt) {
+      const { bytes, value } = parsed;
+      switch (fmt) {
+        case 'decimal': return value.toString(10);
+        case 'hex': return '0x' + value.toString(16);
+        case 'octal': return '0o' + value.toString(8);
+        case 'binary': return '0b' + value.toString(2);
+        case 'text':
+          try { return bytesToText(bytes); }
+          catch { return null; }
+        case 'base64': {
+          let bin = '';
+          for (const b of bytes) bin += String.fromCharCode(b);
+          return btoa(bin);
+        }
+        case 'base32': return base32Encode(bytes);
+      }
+    }
+
+    function render() {
+      const raw = inputEl.value;
+      const fmt = formatEl.value;
+
+      if (!raw.trim()) {
+        outputsEl.innerHTML = '';
+        return;
+      }
+
+      const parsed = parseInput(raw, fmt);
+
+      let html = '';
+      for (const f of FORMATS) {
+        let val;
+        if (!parsed) {
+          val = '<span class="error">invalid input</span>';
+        } else {
+          const out = formatOutput(parsed, f);
+          val = out !== null ? escapeHtml(out) : '<span class="error">n/a</span>';
+        }
+        html += `
+          <div class="output-row">
+            <div class="output-label">${f}</div>
+            <div class="output-value" data-format="${f}">${val}</div>
+            <button class="copy-btn" data-format="${f}" title="Copy">copy</button>
+          </div>`;
+      }
+      outputsEl.innerHTML = html;
+    }
+
+    function escapeHtml(s) {
+      return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    outputsEl.addEventListener('click', e => {
+      const btn = e.target.closest('.copy-btn');
+      if (!btn) return;
+      const fmt = btn.dataset.format;
+      const val = btn.parentElement.querySelector('.output-value');
+      if (val.classList.contains('error')) return;
+      navigator.clipboard.writeText(val.textContent).then(() => {
+        btn.textContent = 'done';
+        setTimeout(() => btn.textContent = 'copy', 1000);
+      });
+    });
+
+    inputEl.addEventListener('input', render);
+    formatEl.addEventListener('change', render);
+  </script>
+</body>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('../sw.js');</script>
+</html>
