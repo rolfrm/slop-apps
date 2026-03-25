@@ -1,0 +1,27 @@
+{
+  "name": "uweek \u2014 Week Calculator",
+  "short_name": "uweek",
+  "description": "ISO week number calculator",
+  "start_url": "/utools/uweek/",
+  "scope": "/utools/uweek/",
+  "display": "standalone",
+  "background_color": "#0a1628",
+  "theme_color": "#38bdf8",
+  "icons": [
+    {
+      "src": "../icons/uweek.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/uweek.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "categories": [
+    "utilities"
+  ]
+}

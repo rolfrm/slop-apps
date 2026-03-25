@@ -1,0 +1,28 @@
+{
+  "name": "uconvert \u2014 Number Converter",
+  "short_name": "uconvert",
+  "description": "Number base and encoding converter",
+  "start_url": "/utools/uconvert/",
+  "scope": "/utools/uconvert/",
+  "display": "standalone",
+  "background_color": "#0a1628",
+  "theme_color": "#a78bfa",
+  "icons": [
+    {
+      "src": "../icons/uconvert.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/uconvert.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "categories": [
+    "utilities",
+    "developer tools"
+  ]
+}

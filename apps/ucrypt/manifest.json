@@ -1,0 +1,28 @@
+{
+  "name": "ucrypt \u2014 Encryption Tools",
+  "short_name": "ucrypt",
+  "description": "Client-side encryption, decryption and hashing",
+  "start_url": "/utools/ucrypt/",
+  "scope": "/utools/ucrypt/",
+  "display": "standalone",
+  "background_color": "#0a1628",
+  "theme_color": "#f59e0b",
+  "icons": [
+    {
+      "src": "../icons/ucrypt.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/ucrypt.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "categories": [
+    "utilities",
+    "developer tools"
+  ]
+}

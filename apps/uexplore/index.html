@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#a78bfa">
+  <script src="../storage.js"></script>
+  
+  <title>uexplore</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0e1a;
+      --surface: #111827;
+      --surface2: #1a2236;
+      --border: #1e2940;
+      --text: #d0d8e8;
+      --text-dim: #6b7a94;
+      --accent: #a78bfa;
+      --accent-dim: rgba(167, 139, 250, 0.1);
+      --radius: 8px;
+    }
+
+    body {
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 12px 16px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8rem;
+      flex-shrink: 0;
+      min-height: 44px;
+    }
+
+    .breadcrumb span {
+      color: var(--text-dim);
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 4px;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .breadcrumb span:hover {
+      background: var(--accent-dim);
+      color: var(--accent);
+    }
+
+    .breadcrumb span.active {
+      color: var(--accent);
+      cursor: default;
+    }
+
+    .breadcrumb .sep {
+      color: var(--text-dim);
+      opacity: 0.4;
+      user-select: none;
+    }
+
+    .main {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* List panel (apps or files) */
+    .list-panel {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+    }
+
+    .list-panel.with-preview {
+      max-width: 280px;
+      min-width: 220px;
+      border-right: 1px solid var(--border);
+      flex: 0 0 280px;
+    }
+
+    .list-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: background 0.15s;
+      font-size: 0.85rem;
+    }
+
+    .list-item:hover {
+      background: var(--surface2);
+    }
+
+    .list-item.selected {
+      background: var(--accent-dim);
+      border: 1px solid rgba(167, 139, 250, 0.2);
+    }
+
+    .list-item .icon {
+      width: 28px;
+      height: 28px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .list-item .icon svg {
+      width: 28px;
+      height: 28px;
+    }
+
+    .list-item .icon.file-icon {
+      color: var(--accent);
+      font-size: 1.1rem;
+    }
+
+    .list-item .name {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .list-item .badge {
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 1px 6px;
+      border-radius: 10px;
+      white-space: nowrap;
+    }
+
+    /* File content preview */
+    .preview-panel {
+      flex: 1;
+      overflow: auto;
+      background: var(--surface);
+    }
+
+    .preview-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface2);
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    .preview-header .filename {
+      font-size: 0.8rem;
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .preview-header .size {
+      font-size: 0.7rem;
+      color: var(--text-dim);
+    }
+
+    .preview-content {
+      padding: 16px;
+      font-size: 0.8rem;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-all;
+      tab-size: 2;
+      color: var(--text);
+    }
+
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: var(--text-dim);
+      font-size: 0.85rem;
+      gap: 8px;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .empty-state .icon-big {
+      font-size: 2rem;
+      opacity: 0.4;
+    }
+
+    .search-bar {
+      padding: 8px;
+      flex-shrink: 0;
+    }
+
+    .search-bar input {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 8px 12px;
+      font-family: inherit;
+      font-size: 0.8rem;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .search-bar input:focus {
+      border-color: var(--accent);
+    }
+
+    .search-bar input::placeholder {
+      color: var(--text-dim);
+    }
+
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: var(--text-dim);
+      font-size: 0.85rem;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 1; }
+    }
+
+    .loading::after {
+      content: '...';
+      animation: pulse 1.2s infinite;
+    }
+  </style>
+</head>
+<body>
+  <div class="breadcrumb" id="breadcrumb">
+    <span class="active">Apps</span>
+  </div>
+
+  <div class="main" id="main">
+    <div class="list-panel" id="list-panel">
+      <div class="loading">Loading apps</div>
+    </div>
+  </div>
+
+  <script>
+    const breadcrumbEl = document.getElementById('breadcrumb');
+    const mainEl = document.getElementById('main');
+
+    let allApps = [];
+    let currentApp = null;
+    let currentFiles = null;
+    let currentFile = null;
+
+    // ── Render breadcrumb ──
+    function renderBreadcrumb() {
+      let html = '';
+      html += `<span data-nav="apps" class="${!currentApp ? 'active' : ''}">Apps</span>`;
+      if (currentApp) {
+        html += `<span class="sep">/</span>`;
+        html += `<span data-nav="files" class="${!currentFile ? 'active' : ''}">${esc(currentApp.name)}</span>`;
+      }
+      if (currentFile) {
+        html += `<span class="sep">/</span>`;
+        html += `<span class="active">${esc(currentFile)}</span>`;
+      }
+      breadcrumbEl.innerHTML = html;
+    }
+
+    breadcrumbEl.addEventListener('click', e => {
+      const nav = e.target.dataset.nav;
+      if (nav === 'apps') {
+        currentApp = null;
+        currentFiles = null;
+        currentFile = null;
+        renderBreadcrumb();
+        renderAppList();
+      } else if (nav === 'files') {
+        currentFile = null;
+        renderBreadcrumb();
+        renderFileList();
+      }
+    });
+
+    // ── Escape HTML ──
+    function esc(str) {
+      const el = document.createElement('span');
+      el.textContent = str;
+      return el.innerHTML;
+    }
+
+    // ── Format file size ──
+    function formatSize(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+    // ── File type icon ──
+    function fileIcon(name) {
+      const ext = name.split('.').pop().toLowerCase();
+      const icons = {
+        html: '&#x1f310;', css: '&#x1f3a8;', js: '&#x26a1;',
+        json: '&#x1f4cb;', svg: '&#x1f5bc;', png: '&#x1f5bc;',
+        jpg: '&#x1f5bc;', md: '&#x1f4dd;', txt: '&#x1f4c4;',
+      };
+      return icons[ext] || '&#x1f4c4;';
+    }
+
+    // ── Default app icon ──
+    function defaultIcon() {
+      return `<svg viewBox="0 0 28 28" fill="none"><rect x="2" y="2" width="24" height="24" rx="4" fill="#1a2a4a" stroke="#a78bfa" stroke-width="1"/><rect x="7" y="7" width="14" height="14" rx="2" fill="none" stroke="#a78bfa" stroke-width="1" opacity="0.5"/></svg>`;
+    }
+
+    // ── Load all apps ──
+    async function loadApps() {
+      try {
+        const [custom, builtin] = await Promise.all([
+          window.kernel.listApps(),
+          window.kernel.getBuiltinApps(),
+        ]);
+        allApps = [
+          ...(builtin || []).map(a => ({ ...a, type: 'builtin' })),
+          ...(custom || []).map(a => ({ ...a, type: 'custom' })),
+        ];
+        renderAppList();
+      } catch (e) {
+        mainEl.querySelector('.list-panel').innerHTML =
+          `<div class="empty-state"><div class="icon-big">!</div><div>Failed to load apps: ${esc(e.message)}</div></div>`;
+      }
+    }
+
+    // ── Render app list ──
+    function renderAppList() {
+      let html = '<div class="search-bar"><input type="text" placeholder="Filter apps..." id="app-search"></div>';
+      const sorted = [...allApps].sort((a, b) => (a.name || a.id).localeCompare(b.name || b.id));
+      for (const app of sorted) {
+        const icon = app.iconSvg || app.icon || defaultIcon();
+        const isSvg = icon.trim().startsWith('<');
+        html += `<div class="list-item" data-id="${esc(app.id)}">
+          <div class="icon">${isSvg ? icon : `<span style="font-size:24px">${esc(icon)}</span>`}</div>
+          <div class="name">${esc(app.name || app.id)}</div>
+          <div class="badge">${app.type}</div>
+        </div>`;
+      }
+      mainEl.innerHTML = `<div class="list-panel" id="list-panel">${html}</div>`;
+
+      // Search filter
+      const searchInput = document.getElementById('app-search');
+      searchInput.addEventListener('input', () => {
+        const q = searchInput.value.toLowerCase();
+        mainEl.querySelectorAll('.list-item').forEach(el => {
+          const name = (el.querySelector('.name')?.textContent || '').toLowerCase();
+          el.style.display = name.includes(q) ? '' : 'none';
+        });
+      });
+      searchInput.focus();
+
+      // Click handler
+      mainEl.querySelector('.list-panel').addEventListener('click', e => {
+        const item = e.target.closest('.list-item');
+        if (!item) return;
+        const id = item.dataset.id;
+        const app = allApps.find(a => a.id === id);
+        if (app) openApp(app);
+      });
+    }
+
+    // ── Open app → show files ──
+    async function openApp(app) {
+      currentApp = app;
+      currentFile = null;
+      renderBreadcrumb();
+
+      mainEl.innerHTML = `<div class="list-panel"><div class="loading">Loading files</div></div>`;
+
+      try {
+        const files = await kernel.getAppFiles(app.id);
+        currentFiles = files || {};
+        renderFileList();
+      } catch (e) {
+        mainEl.innerHTML = `<div class="list-panel"><div class="empty-state"><div class="icon-big">!</div><div>Cannot read files: ${esc(e.message)}</div></div></div>`;
+      }
+    }
+
+    // ── Render file list ──
+    function renderFileList() {
+      const names = Object.keys(currentFiles).sort();
+      if (names.length === 0) {
+        mainEl.innerHTML = `<div class="list-panel"><div class="empty-state"><div class="icon-big">&#x1f4c2;</div><div>No files found</div></div></div>`;
+        return;
+      }
+
+      let html = '';
+      for (const name of names) {
+        const size = currentFiles[name] ? currentFiles[name].length : 0;
+        html += `<div class="list-item" data-file="${esc(name)}">
+          <div class="icon file-icon">${fileIcon(name)}</div>
+          <div class="name">${esc(name)}</div>
+          <div class="badge">${formatSize(size)}</div>
+        </div>`;
+      }
+
+      mainEl.innerHTML = `<div class="list-panel with-preview" id="file-list">${html}</div>
+        <div class="preview-panel" id="preview">
+          <div class="empty-state"><div class="icon-big">&#x1f4c4;</div><div>Select a file to view its contents</div></div>
+        </div>`;
+
+      mainEl.querySelector('#file-list').addEventListener('click', e => {
+        const item = e.target.closest('.list-item');
+        if (!item) return;
+        const name = item.dataset.file;
+        openFile(name);
+        // Highlight selected
+        mainEl.querySelectorAll('#file-list .list-item').forEach(el => el.classList.remove('selected'));
+        item.classList.add('selected');
+      });
+
+      // Auto-select first file
+      if (names.length > 0) {
+        openFile(names[0]);
+        mainEl.querySelector('#file-list .list-item')?.classList.add('selected');
+      }
+    }
+
+    // ── Open file → show content ──
+    function openFile(name) {
+      currentFile = name;
+      renderBreadcrumb();
+
+      const content = currentFiles[name] || '';
+      const previewEl = document.getElementById('preview');
+
+      previewEl.innerHTML = `
+        <div class="preview-header">
+          <span class="filename">${esc(name)}</span>
+          <span class="size">${formatSize(content.length)}</span>
+        </div>
+        <pre class="preview-content">${esc(content)}</pre>`;
+    }
+
+    // ── Init ──
+    loadApps();
+  </script>
+</body>
+</html>

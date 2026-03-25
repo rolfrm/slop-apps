@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#34d399">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="../icons/utime.svg">
+  <link rel="apple-touch-icon" href="../icons/utime.png">
+  <title>utime</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0e1a;
+      --surface: #111827;
+      --surface2: #1a2236;
+      --border: #1e2940;
+      --text: #d0d8e8;
+      --text-dim: #6b7a94;
+      --accent: #34d399;
+      --accent-dim: rgba(52, 211, 153, 0.1);
+      --radius: 8px;
+    }
+
+    body {
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 40px 20px;
+    }
+
+    .container { max-width: 720px; width: 100%; }
+
+    h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 4px; }
+    .subtitle { color: var(--text-dim); font-size: 0.85rem; margin-bottom: 24px; }
+
+    label {
+      display: block;
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .input-group { margin-bottom: 16px; }
+
+    .row { display: flex; gap: 10px; flex-wrap: wrap; }
+
+    input, select {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.9rem;
+      padding: 10px 12px;
+    }
+
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    input[type="text"] { flex: 1; min-width: 180px; }
+    input[type="date"] { width: 160px; }
+    input[type="time"] { width: 130px; }
+    select { min-width: 200px; cursor: pointer; }
+
+    .now-btn {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--accent);
+      font-family: inherit;
+      font-size: 0.8rem;
+      padding: 10px 14px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .now-btn:hover { background: var(--accent-dim); }
+
+    .sep { height: 1px; background: var(--border); margin: 20px 0; }
+
+    .tz-list { display: flex; flex-direction: column; gap: 8px; }
+
+    .tz-row {
+      display: flex;
+      align-items: stretch;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .tz-label {
+      display: flex;
+      align-items: center;
+      width: 200px;
+      min-width: 200px;
+      padding: 10px 12px;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--accent);
+      background: var(--surface2);
+      border-right: 1px solid var(--border);
+    }
+
+    .tz-value {
+      flex: 1;
+      padding: 10px 12px;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .tz-value .date { color: var(--text); }
+    .tz-value .time { color: var(--accent); font-weight: 600; }
+    .tz-value .offset { color: var(--text-dim); font-size: 0.8rem; margin-left: 8px; }
+    .tz-value .day-diff { color: var(--text-dim); font-size: 0.75rem; margin-left: 6px; }
+
+    .remove-btn {
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      background: none;
+      border: none;
+      border-left: 1px solid var(--border);
+      color: var(--text-dim);
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-family: inherit;
+      transition: color 0.15s, background 0.15s;
+    }
+    .remove-btn:hover { color: #f87171; background: rgba(248,113,113,0.1); }
+
+    .add-row { display: flex; gap: 10px; margin-top: 12px; }
+
+    .add-btn {
+      background: var(--accent-dim);
+      border: 1px solid var(--accent);
+      border-radius: var(--radius);
+      color: var(--accent);
+      font-family: inherit;
+      font-size: 0.8rem;
+      padding: 8px 16px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .add-btn:hover { background: rgba(52,211,153,0.2); }
+
+    .unix-row {
+      margin-top: 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 12px;
+      font-size: 0.85rem;
+      color: var(--text-dim);
+    }
+    .unix-row span { color: var(--text); font-weight: 500; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>utime</h1>
+    <p class="subtitle">Convert times between time zones. All data stays on your device.</p>
+
+    <div class="input-group">
+      <label>Input time</label>
+      <div class="row">
+        <input type="date" id="in-date">
+        <input type="time" id="in-time" step="1">
+        <select id="in-tz"></select>
+        <button class="now-btn" id="btn-now">Now</button>
+      </div>
+    </div>
+
+    <div class="input-group">
+      <label>Or paste a timestamp</label>
+      <div class="row">
+        <input type="text" id="in-raw" placeholder="Unix epoch, ISO 8601, or natural format...">
+      </div>
+    </div>
+
+    <div class="sep"></div>
+
+    <div class="tz-list" id="tz-list"></div>
+
+    <div class="add-row">
+      <select id="add-tz-select"></select>
+      <button class="add-btn" id="btn-add">+ Add zone</button>
+    </div>
+
+    <div class="unix-row" id="unix-row"></div>
+  </div>
+
+  <script src="../storage.js"></script>
+  <script>
+    (function() {
+
+    const ZONES = [
+      'UTC',
+      'America/New_York',
+      'America/Chicago',
+      'America/Denver',
+      'America/Los_Angeles',
+      'America/Anchorage',
+      'Pacific/Honolulu',
+      'America/Toronto',
+      'America/Vancouver',
+      'America/Sao_Paulo',
+      'America/Argentina/Buenos_Aires',
+      'America/Mexico_City',
+      'Europe/London',
+      'Europe/Paris',
+      'Europe/Berlin',
+      'Europe/Amsterdam',
+      'Europe/Brussels',
+      'Europe/Madrid',
+      'Europe/Rome',
+      'Europe/Zurich',
+      'Europe/Vienna',
+      'Europe/Stockholm',
+      'Europe/Oslo',
+      'Europe/Copenhagen',
+      'Europe/Helsinki',
+      'Europe/Warsaw',
+      'Europe/Prague',
+      'Europe/Budapest',
+      'Europe/Bucharest',
+      'Europe/Athens',
+      'Europe/Istanbul',
+      'Europe/Moscow',
+      'Asia/Dubai',
+      'Asia/Karachi',
+      'Asia/Kolkata',
+      'Asia/Dhaka',
+      'Asia/Bangkok',
+      'Asia/Singapore',
+      'Asia/Hong_Kong',
+      'Asia/Shanghai',
+      'Asia/Taipei',
+      'Asia/Seoul',
+      'Asia/Tokyo',
+      'Australia/Sydney',
+      'Australia/Melbourne',
+      'Australia/Perth',
+      'Pacific/Auckland',
+      'Pacific/Fiji',
+      'Africa/Cairo',
+      'Africa/Lagos',
+      'Africa/Johannesburg',
+      'Africa/Nairobi',
+    ];
+
+    const localTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+    const DEFAULT_ZONES = ['UTC', 'America/New_York', 'Europe/London', 'Asia/Tokyo'];
+    let outputZones;
+    try {
+      const saved = JSON.parse(localStorage.getItem('utime-zones'));
+      outputZones = Array.isArray(saved) && saved.length ? saved : [...DEFAULT_ZONES];
+    } catch { outputZones = [...DEFAULT_ZONES]; }
+    // Add local tz if not already present
+    if (!outputZones.includes(localTz)) outputZones.unshift(localTz);
+
+    function saveZones() {
+      localStorage.setItem('utime-zones', JSON.stringify(outputZones));
+    }
+
+    const dateEl = document.getElementById('in-date');
+    const timeEl = document.getElementById('in-time');
+    const tzEl = document.getElementById('in-tz');
+    const rawEl = document.getElementById('in-raw');
+    const listEl = document.getElementById('tz-list');
+    const unixEl = document.getElementById('unix-row');
+    const addSelEl = document.getElementById('add-tz-select');
+
+    function populateSelect(sel, selected) {
+      sel.innerHTML = '';
+      for (const tz of ZONES) {
+        const opt = document.createElement('option');
+        opt.value = tz;
+        opt.textContent = tz.replace(/_/g, ' ');
+        if (tz === selected) opt.selected = true;
+        sel.appendChild(opt);
+      }
+    }
+
+    // Ensure local tz is in ZONES
+    if (!ZONES.includes(localTz)) ZONES.unshift(localTz);
+
+    populateSelect(tzEl, localTz);
+    populateSelect(addSelEl, 'UTC');
+
+    function setNow() {
+      const now = new Date();
+      const parts = now.toLocaleString('sv-SE', { timeZone: localTz }).split(' ');
+      dateEl.value = parts[0];
+      timeEl.value = parts[1];
+      tzEl.value = localTz;
+      rawEl.value = '';
+      render();
+    }
+
+    function getInputDate() {
+      // Try raw input first
+      const raw = rawEl.value.trim();
+      if (raw) {
+        // Unix seconds or milliseconds
+        if (/^\d{9,13}$/.test(raw)) {
+          const n = parseInt(raw);
+          return new Date(n > 1e11 ? n : n * 1000);
+        }
+        // ISO or parseable
+        const d = new Date(raw);
+        if (!isNaN(d)) return d;
+        return null;
+      }
+
+      if (!dateEl.value || !timeEl.value) return null;
+
+      // Build date from fields + selected tz
+      const tz = tzEl.value;
+      // Create a date string and parse in the given tz
+      const isoish = `${dateEl.value}T${timeEl.value}`;
+      // Use a trick: format the target in the tz, find offset
+      const probe = new Date(isoish + 'Z');
+      const utcStr = probe.toLocaleString('sv-SE', { timeZone: 'UTC' });
+      const tzStr = probe.toLocaleString('sv-SE', { timeZone: tz });
+      const utcMs = new Date(utcStr.replace(' ', 'T') + 'Z').getTime();
+      const tzMs = new Date(tzStr.replace(' ', 'T') + 'Z').getTime();
+      const offsetMs = tzMs - utcMs;
+
+      return new Date(probe.getTime() - offsetMs);
+    }
+
+    function formatInZone(date, tz) {
+      const opts = {
+        timeZone: tz,
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit',
+        hour12: false,
+      };
+      const parts = new Intl.DateTimeFormat('en-GB', opts).formatToParts(date);
+      const get = type => (parts.find(p => p.type === type) || {}).value || '';
+      const dateStr = `${get('year')}-${get('month')}-${get('day')}`;
+      const timeStr = `${get('hour')}:${get('minute')}:${get('second')}`;
+
+      // Get UTC offset
+      const offsetFmt = new Intl.DateTimeFormat('en-GB', {
+        timeZone: tz, timeZoneName: 'shortOffset',
+      }).formatToParts(date);
+      const tzName = (offsetFmt.find(p => p.type === 'timeZoneName') || {}).value || '';
+
+      return { dateStr, timeStr, tzName };
+    }
+
+    function dayDiff(date, tz) {
+      const localDate = formatInZone(date, localTz).dateStr;
+      const targetDate = formatInZone(date, tz).dateStr;
+      if (localDate === targetDate) return '';
+      const ld = new Date(localDate), td = new Date(targetDate);
+      const diff = Math.round((td - ld) / 86400000);
+      if (diff > 0) return `+${diff}d`;
+      return `${diff}d`;
+    }
+
+    function render() {
+      const date = getInputDate();
+
+      if (!date) {
+        listEl.innerHTML = '';
+        unixEl.innerHTML = '';
+        return;
+      }
+
+      let html = '';
+      for (const tz of outputZones) {
+        const f = formatInZone(date, tz);
+        const dd = dayDiff(date, tz);
+        html += `
+          <div class="tz-row">
+            <div class="tz-label">${tz.replace(/_/g, ' ')}</div>
+            <div class="tz-value">
+              <span class="date">${f.dateStr}</span>
+              <span class="time">${f.timeStr}</span>
+              <span class="offset">${f.tzName}</span>
+              ${dd ? `<span class="day-diff">${dd}</span>` : ''}
+            </div>
+            <button class="remove-btn" data-tz="${tz}" title="Remove">&times;</button>
+          </div>`;
+      }
+      listEl.innerHTML = html;
+
+      const unix = Math.floor(date.getTime() / 1000);
+      unixEl.innerHTML = `Unix: <span>${unix}</span> &nbsp;|&nbsp; ISO: <span>${date.toISOString()}</span>`;
+    }
+
+    listEl.addEventListener('click', e => {
+      const btn = e.target.closest('.remove-btn');
+      if (!btn) return;
+      const tz = btn.dataset.tz;
+      outputZones = outputZones.filter(z => z !== tz);
+      saveZones();
+      render();
+    });
+
+    document.getElementById('btn-add').addEventListener('click', () => {
+      const tz = addSelEl.value;
+      if (!outputZones.includes(tz)) {
+        outputZones.push(tz);
+        saveZones();
+        render();
+      }
+    });
+
+    document.getElementById('btn-now').addEventListener('click', setNow);
+    dateEl.addEventListener('input', () => { rawEl.value = ''; render(); });
+    timeEl.addEventListener('input', () => { rawEl.value = ''; render(); });
+    tzEl.addEventListener('change', () => { rawEl.value = ''; render(); });
+    rawEl.addEventListener('input', render);
+
+    setNow();
+    })();
+  </script>
+</body>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('../sw.js');</script>
+</html>

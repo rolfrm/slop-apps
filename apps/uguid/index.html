@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#60a5fa">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="../icons/uguid.svg">
+  <link rel="apple-touch-icon" href="../icons/uguid.png">
+  <title>uguid</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0e1a;
+      --surface: #111827;
+      --surface2: #1a2236;
+      --border: #1e2940;
+      --text: #d0d8e8;
+      --text-dim: #6b7a94;
+      --accent: #60a5fa;
+      --accent-dim: rgba(96, 165, 250, 0.1);
+      --radius: 8px;
+    }
+
+    body {
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 40px 20px;
+    }
+
+    .container { max-width: 720px; width: 100%; }
+
+    h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 4px; }
+    .subtitle { color: var(--text-dim); font-size: 0.85rem; margin-bottom: 24px; }
+
+    .gen-btn {
+      background: var(--accent-dim);
+      border: 1px solid var(--accent);
+      border-radius: var(--radius);
+      color: var(--accent);
+      font-family: inherit;
+      font-size: 0.9rem;
+      padding: 10px 20px;
+      cursor: pointer;
+      transition: background 0.15s;
+      margin-bottom: 20px;
+    }
+    .gen-btn:hover { background: rgba(96, 165, 250, 0.2); }
+
+    .sep { height: 1px; background: var(--border); margin: 20px 0; }
+
+    .format-list { display: flex; flex-direction: column; gap: 8px; }
+
+    .format-row {
+      display: flex;
+      align-items: stretch;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .format-label {
+      display: flex;
+      align-items: center;
+      width: 160px;
+      min-width: 160px;
+      padding: 10px 12px;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--accent);
+      background: var(--surface2);
+      border-right: 1px solid var(--border);
+    }
+
+    .format-value {
+      flex: 1;
+      padding: 10px 12px;
+      font-size: 0.9rem;
+      line-height: 1.5;
+      word-break: break-all;
+      user-select: all;
+    }
+
+    .copy-btn {
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+      background: none;
+      border: none;
+      border-left: 1px solid var(--border);
+      color: var(--text-dim);
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-family: inherit;
+      transition: color 0.15s, background 0.15s;
+      white-space: nowrap;
+    }
+    .copy-btn:hover { color: var(--accent); background: var(--accent-dim); }
+    .copy-btn.copied { color: #34d399; }
+
+    .history { margin-top: 8px; }
+    .history-title {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 8px;
+    }
+    .history-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 0;
+      font-size: 0.85rem;
+      color: var(--text-dim);
+      cursor: pointer;
+      transition: color 0.15s;
+    }
+    .history-item:hover { color: var(--text); }
+    .history-item .idx { color: var(--text-dim); font-size: 0.75rem; min-width: 20px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>uguid</h1>
+    <p class="subtitle">Generate GUIDs / UUIDs in common formats. All data stays on your device.</p>
+
+    <button class="gen-btn" id="btn-gen">Generate new GUID</button>
+
+    <div class="format-list" id="formats"></div>
+
+    <div class="sep"></div>
+
+    <div class="history">
+      <div class="history-title">History</div>
+      <div id="history-list"></div>
+    </div>
+  </div>
+
+  <script>
+    const formatsEl = document.getElementById('formats');
+    const historyEl = document.getElementById('history-list');
+    const history = [];
+
+    function generateGUID() {
+      // Generate v4 UUID using crypto API
+      if (crypto.randomUUID) {
+        return crypto.randomUUID();
+      }
+      // Fallback
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+        const r = crypto.getRandomValues(new Uint8Array(1))[0] & (c === 'x' ? 0xf : 0x3) | (c === 'y' ? 0x8 : 0);
+        return r.toString(16);
+      });
+    }
+
+    function getFormats(guid) {
+      const bare = guid.replace(/-/g, '');
+      const upper = guid.toUpperCase();
+      const bareUpper = bare.toUpperCase();
+      // Byte array
+      const bytes = [];
+      for (let i = 0; i < bare.length; i += 2) {
+        bytes.push('0x' + bare.slice(i, i + 2));
+      }
+      // .NET Guid constructor style: {xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}
+      const braced = `{${guid}}`;
+      const bracedUpper = `{${upper}}`;
+      // URN
+      const urn = `urn:uuid:${guid}`;
+      // Base64
+      const byteArray = new Uint8Array(bare.match(/.{2}/g).map(b => parseInt(b, 16)));
+      const base64 = btoa(String.fromCharCode(...byteArray));
+
+      return [
+        { label: 'Standard', value: guid },
+        { label: 'Uppercase', value: upper },
+        { label: 'No dashes', value: bare },
+        { label: 'No dashes upper', value: bareUpper },
+        { label: 'Braces', value: braced },
+        { label: 'Braces upper', value: bracedUpper },
+        { label: 'URN', value: urn },
+        { label: 'Base64', value: base64 },
+        { label: 'Byte array', value: `[${bytes.join(', ')}]` },
+      ];
+    }
+
+    function renderFormats(guid) {
+      const formats = getFormats(guid);
+      let html = '';
+      for (const f of formats) {
+        html += `
+          <div class="format-row">
+            <div class="format-label">${f.label}</div>
+            <div class="format-value">${f.value}</div>
+            <button class="copy-btn" data-value="${f.value.replace(/"/g, '&quot;')}">Copy</button>
+          </div>`;
+      }
+      formatsEl.innerHTML = html;
+    }
+
+    function renderHistory() {
+      if (history.length === 0) {
+        historyEl.innerHTML = '<div style="color:var(--text-dim);font-size:0.85rem;">No history yet</div>';
+        return;
+      }
+      let html = '';
+      for (let i = history.length - 1; i >= 0; i--) {
+        html += `<div class="history-item" data-guid="${history[i]}">
+          <span class="idx">${i + 1}</span>
+          <span>${history[i]}</span>
+        </div>`;
+      }
+      historyEl.innerHTML = html;
+    }
+
+    function generate() {
+      const guid = generateGUID();
+      history.push(guid);
+      renderFormats(guid);
+      renderHistory();
+    }
+
+    formatsEl.addEventListener('click', e => {
+      const btn = e.target.closest('.copy-btn');
+      if (!btn) return;
+      const value = btn.dataset.value;
+      navigator.clipboard.writeText(value).then(() => {
+        btn.textContent = 'Copied!';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.textContent = 'Copy';
+          btn.classList.remove('copied');
+        }, 1500);
+      });
+    });
+
+    historyEl.addEventListener('click', e => {
+      const item = e.target.closest('.history-item');
+      if (!item) return;
+      renderFormats(item.dataset.guid);
+    });
+
+    document.getElementById('btn-gen').addEventListener('click', generate);
+
+    // Generate one on load
+    generate();
+  </script>
+</body>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('../sw.js');</script>
+</html>

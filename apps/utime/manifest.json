@@ -1,0 +1,27 @@
+{
+  "name": "utime \u2014 Time Converter",
+  "short_name": "utime",
+  "description": "Timezone and timestamp converter",
+  "start_url": "/utools/utime/",
+  "scope": "/utools/utime/",
+  "display": "standalone",
+  "background_color": "#0a1628",
+  "theme_color": "#34d399",
+  "icons": [
+    {
+      "src": "../icons/utime.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/utime.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "categories": [
+    "utilities"
+  ]
+}

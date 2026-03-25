@@ -1,0 +1,27 @@
+{
+  "name": "videoconvert \u2014 Video Converter",
+  "short_name": "videoconvert",
+  "description": "Client-side video format converter",
+  "start_url": "/utools/videoconvert/",
+  "scope": "/utools/videoconvert/",
+  "display": "standalone",
+  "background_color": "#0a1628",
+  "theme_color": "#e05080",
+  "icons": [
+    {
+      "src": "../icons/videoconvert.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/videoconvert.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "categories": [
+    "utilities"
+  ]
+}

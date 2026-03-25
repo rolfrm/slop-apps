@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ucal</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0e1a;
+      --surface: #111827;
+      --surface2: #1a2236;
+      --border: #1e2940;
+      --text: #d0d8e8;
+      --text-dim: #6b7a94;
+      --accent: #34d399;
+      --accent-dim: rgba(52, 211, 153, 0.1);
+      --radius: 8px;
+    }
+
+    body {
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 16px 20px;
+    }
+
+    .container { max-width: 720px; width: 100%; }
+
+    h1 { font-size: 1.1rem; font-weight: 700; }
+
+    .top-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+
+    /* Country management */
+    .country-bar {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .country-bar select, .country-bar input {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.85rem;
+      padding: 8px 10px;
+    }
+
+    .country-bar select:focus, .country-bar input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .country-bar select { width: 200px; cursor: pointer; }
+    .country-bar input { width: 60px; text-transform: uppercase; }
+
+    .btn {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--accent);
+      font-family: inherit;
+      font-size: 0.85rem;
+      padding: 8px 14px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn:hover { background: var(--accent-dim); }
+
+    .country-tags {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+
+    .country-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 14px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      border: 1px solid;
+      cursor: default;
+    }
+
+    .country-tag .remove {
+      cursor: pointer;
+      opacity: 0.6;
+      font-size: 0.9rem;
+      line-height: 1;
+    }
+    .country-tag .remove:hover { opacity: 1; }
+
+    /* Calendar nav */
+    .cal-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .cal-nav .month-label {
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+
+    .cal-nav button {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 1rem;
+      padding: 6px 14px;
+      cursor: pointer;
+    }
+    .cal-nav button:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* 3-month grid */
+    .months-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    @media (max-width: 600px) {
+      .months-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    .mini-month {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 8px;
+    }
+
+    .mini-month-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 6px;
+      text-align: center;
+    }
+
+    /* Calendar grid */
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 1px;
+    }
+
+    .cal-header {
+      text-align: center;
+      font-size: 0.55rem;
+      color: var(--text-dim);
+      padding: 2px 0;
+      text-transform: uppercase;
+    }
+
+    .cal-cell {
+      background: var(--surface2);
+      border-radius: 2px;
+      min-height: 24px;
+      padding: 2px;
+      position: relative;
+      font-size: 0.6rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .cal-cell.empty { background: transparent; }
+
+    .cal-cell .day-num {
+      font-size: 0.6rem;
+      color: var(--text-dim);
+      line-height: 1;
+    }
+
+    .cal-cell.today {
+      outline: 2px solid var(--accent);
+      outline-offset: -1px;
+    }
+
+    .cal-cell.has-holiday { cursor: pointer; }
+
+    .holiday-dots {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1px;
+      justify-content: center;
+      margin-top: 1px;
+    }
+
+    .holiday-dot {
+      width: 6px;
+      height: 4px;
+      border-radius: 1px;
+    }
+
+    .holiday-single {
+      position: absolute;
+      inset: 0;
+      border-radius: 2px;
+      opacity: 0.25;
+    }
+
+    .cal-cell.has-holiday.single-country .day-num {
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Tooltip */
+    .tooltip {
+      display: none;
+      position: fixed;
+      background: #1e293b;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 8px 12px;
+      font-size: 0.78rem;
+      max-width: 260px;
+      z-index: 100;
+      pointer-events: none;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    }
+
+    .tooltip.visible { display: block; }
+
+    .tooltip-line {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin: 2px 0;
+    }
+
+    .tooltip-swatch {
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+
+    /* Upcoming */
+    .section-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .upcoming-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .upcoming-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 12px;
+      background: var(--surface);
+      border-radius: var(--radius);
+      font-size: 0.82rem;
+      border-left: 3px solid;
+    }
+
+    .upcoming-date {
+      color: var(--text-dim);
+      min-width: 90px;
+      flex-shrink: 0;
+    }
+
+    .upcoming-name { flex: 1; }
+
+    .upcoming-country {
+      font-size: 0.75rem;
+      opacity: 0.8;
+      flex-shrink: 0;
+    }
+
+    .no-countries {
+      color: var(--text-dim);
+      font-size: 0.85rem;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .cal-cell.has-note {
+      outline: 1px solid #fbbf24;
+      outline-offset: -1px;
+    }
+
+    .cal-cell.has-note .day-num {
+      color: #fbbf24 !important;
+    }
+
+    .note-indicator {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: #fbbf24;
+      position: absolute;
+      top: 2px;
+      right: 2px;
+    }
+
+    .cal-cell { cursor: pointer; }
+
+    /* Note editor modal */
+    .note-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .note-modal.visible { display: flex; }
+
+    .note-dialog {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      width: 320px;
+      max-width: 90vw;
+    }
+
+    .note-dialog-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+
+    .note-dialog textarea {
+      width: 100%;
+      height: 80px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.8rem;
+      padding: 8px;
+      resize: vertical;
+    }
+
+    .note-dialog textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .note-dialog-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+      justify-content: flex-end;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="top-bar">
+      <h1>ucal</h1>
+      <div class="country-bar">
+        <select id="countrySelect">
+          <option value="">+ country</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="country-tags" id="countryTags"></div>
+
+    <div class="cal-nav">
+      <button id="prevMonth">&larr;</button>
+      <span class="month-label" id="monthLabel"></span>
+      <button id="nextMonth">&rarr;</button>
+    </div>
+
+    <div class="months-grid" id="monthsGrid"></div>
+
+    <div class="section-title">Upcoming holidays</div>
+    <div class="upcoming-list" id="upcomingList"></div>
+  </div>
+
+  <div class="tooltip" id="tooltip"></div>
+
+  <div class="note-modal" id="noteModal">
+    <div class="note-dialog">
+      <div class="note-dialog-title" id="noteDialogTitle"></div>
+      <textarea id="noteText" placeholder="Add a note..."></textarea>
+      <div class="note-dialog-actions">
+        <button class="btn" id="noteDelete" style="color:#f87171;margin-right:auto">Delete</button>
+        <button class="btn" id="noteCancel">Cancel</button>
+        <button class="btn" id="noteSave" style="color:#34d399">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../storage.js"></script>
+  <script>
+    (function() {
+
+    const PALETTE = [
+      '#34d399', '#60a5fa', '#f472b6', '#fbbf24', '#a78bfa',
+      '#fb923c', '#2dd4bf', '#e879f9', '#4ade80', '#f87171',
+      '#38bdf8', '#facc15', '#c084fc', '#fb7185', '#22d3ee'
+    ];
+
+    const COUNTRIES_DATA = [
+      ['AD','Andorra'],['AL','Albania'],['AR','Argentina'],['AT','Austria'],
+      ['AU','Australia'],['BA','Bosnia and Herzegovina'],['BB','Barbados'],
+      ['BE','Belgium'],['BG','Bulgaria'],['BJ','Benin'],['BO','Bolivia'],
+      ['BR','Brazil'],['BS','Bahamas'],['BW','Botswana'],['BY','Belarus'],
+      ['BZ','Belize'],['CA','Canada'],['CH','Switzerland'],['CL','Chile'],
+      ['CN','China'],['CO','Colombia'],['CR','Costa Rica'],['CU','Cuba'],
+      ['CY','Cyprus'],['CZ','Czechia'],['DE','Germany'],['DK','Denmark'],
+      ['DO','Dominican Republic'],['EC','Ecuador'],['EE','Estonia'],
+      ['EG','Egypt'],['ES','Spain'],['FI','Finland'],['FR','France'],
+      ['GA','Gabon'],['GB','United Kingdom'],['GD','Grenada'],['GL','Greenland'],
+      ['GM','Gambia'],['GR','Greece'],['GT','Guatemala'],['GY','Guyana'],
+      ['HN','Honduras'],['HR','Croatia'],['HT','Haiti'],['HU','Hungary'],
+      ['ID','Indonesia'],['IE','Ireland'],['IN','India'],['IS','Iceland'],['IT','Italy'],
+      ['JM','Jamaica'],['JP','Japan'],['KE','Kenya'],['KR','South Korea'],
+      ['LI','Liechtenstein'],['LS','Lesotho'],['LT','Lithuania'],
+      ['LU','Luxembourg'],['LV','Latvia'],['MA','Morocco'],['MC','Monaco'],
+      ['MD','Moldova'],['ME','Montenegro'],['MG','Madagascar'],['MK','North Macedonia'],
+      ['MN','Mongolia'],['MX','Mexico'],['MZ','Mozambique'],['NA','Namibia'],
+      ['NE','Niger'],['NG','Nigeria'],['NI','Nicaragua'],['NL','Netherlands'],
+      ['NO','Norway'],['NZ','New Zealand'],['PA','Panama'],['PE','Peru'],
+      ['PG','Papua New Guinea'],['PH','Philippines'],['PL','Poland'],
+      ['PR','Puerto Rico'],['PT','Portugal'],['PY','Paraguay'],['RO','Romania'],
+      ['RS','Serbia'],['RU','Russia'],['SE','Sweden'],['SG','Singapore'],
+      ['SI','Slovenia'],['SK','Slovakia'],['SM','San Marino'],['SR','Suriname'],
+      ['SV','El Salvador'],['TN','Tunisia'],['TR','Turkey'],['TT','Trinidad and Tobago'],
+      ['UA','Ukraine'],['US','United States'],['UY','Uruguay'],['VA','Vatican City'],
+      ['VE','Venezuela'],['VN','Vietnam'],['ZA','South Africa'],['ZW','Zimbabwe']
+    ];
+
+    // Hardcoded holidays for countries not in Nager.Date API
+    // India gazetted holidays (fixed dates, same every year)
+    const STATIC_HOLIDAYS = {
+      IN: [
+        { date: '-01-26', name: 'Republic Day', localName: 'Republic Day' },
+        { date: '-03-14', name: 'Holi', localName: 'Holi' },
+        { date: '-04-14', name: 'Dr. Ambedkar Jayanti', localName: 'Dr. Ambedkar Jayanti' },
+        { date: '-04-18', name: 'Good Friday', localName: 'Good Friday' },
+        { date: '-05-01', name: 'May Day', localName: 'May Day' },
+        { date: '-05-12', name: 'Buddha Purnima', localName: 'Buddha Purnima' },
+        { date: '-06-27', name: 'Eid ul-Fitr', localName: 'Eid ul-Fitr' },
+        { date: '-07-06', name: 'Muharram', localName: 'Muharram' },
+        { date: '-08-15', name: 'Independence Day', localName: 'Independence Day' },
+        { date: '-08-16', name: 'Janmashtami', localName: 'Janmashtami' },
+        { date: '-09-05', name: 'Milad-un-Nabi', localName: 'Milad-un-Nabi' },
+        { date: '-10-02', name: 'Gandhi Jayanti', localName: 'Gandhi Jayanti' },
+        { date: '-10-02', name: 'Dussehra', localName: 'Dussehra' },
+        { date: '-10-20', name: 'Diwali', localName: 'Diwali' },
+        { date: '-10-21', name: 'Diwali Holiday', localName: 'Diwali Holiday' },
+        { date: '-11-05', name: 'Guru Nanak Jayanti', localName: 'Guru Nanak Jayanti' },
+        { date: '-12-25', name: 'Christmas', localName: 'Christmas' },
+      ]
+    };
+
+    function getStaticHolidays(year, cc) {
+      const templates = STATIC_HOLIDAYS[cc];
+      if (!templates) return null;
+      return templates.map(h => ({
+        date: `${year}${h.date}`,
+        name: h.name,
+        localName: h.localName,
+        countryCode: cc,
+      }));
+    }
+
+    const CACHE_TTL = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+    const FLAG_OFFSET = 0x1F1E6 - 65;
+    function flag(cc) {
+      return String.fromCodePoint(cc.charCodeAt(0) + FLAG_OFFSET, cc.charCodeAt(1) + FLAG_OFFSET);
+    }
+
+    // State (loaded async from appStorage)
+    let selectedCountries = JSON.parse(localStorage.getItem('ucal_countries') || '[]');
+    let holidayCache = JSON.parse(localStorage.getItem('ucal_cache') || '{}');
+    let notes = JSON.parse(localStorage.getItem('ucal_notes') || '{}');
+    let viewYear, viewMonth; // 0-indexed month
+    let colorMap = {};
+
+    function saveNotes() {
+      localStorage.setItem('ucal_notes', JSON.stringify(notes));
+    }
+
+    const now = new Date();
+    viewYear = now.getFullYear();
+    viewMonth = now.getMonth();
+
+    // Populate dropdown
+    const countrySelect = document.getElementById('countrySelect');
+    COUNTRIES_DATA.forEach(([code, name]) => {
+      const opt = document.createElement('option');
+      opt.value = code;
+      opt.textContent = `${flag(code)} ${name} (${code})`;
+      countrySelect.appendChild(opt);
+    });
+
+    function saveCountries() {
+      localStorage.setItem('ucal_countries', JSON.stringify(selectedCountries));
+    }
+
+    function saveCache() {
+      localStorage.setItem('ucal_cache', JSON.stringify(holidayCache));
+    }
+
+    function rebuildColorMap() {
+      colorMap = {};
+      selectedCountries.forEach((cc, i) => {
+        colorMap[cc] = PALETTE[i % PALETTE.length];
+      });
+    }
+
+    async function fetchHolidays(year, cc) {
+      const key = `${year}_${cc}`;
+      const cached = holidayCache[key];
+      if (cached && cached._ts && (Date.now() - cached._ts < CACHE_TTL)) {
+        return cached.data;
+      }
+
+      // Use static holidays for countries not in the API
+      const staticData = getStaticHolidays(year, cc);
+      if (staticData) {
+        holidayCache[key] = { data: staticData, _ts: Date.now() };
+        saveCache();
+        return staticData;
+      }
+
+      try {
+        const res = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${year}/${cc}`);
+        if (!res.ok) {
+          holidayCache[key] = { data: [], _ts: Date.now() };
+          saveCache();
+          return [];
+        }
+        const data = await res.json();
+        holidayCache[key] = { data, _ts: Date.now() };
+        saveCache();
+        return data;
+      } catch {
+        holidayCache[key] = { data: [], _ts: Date.now() };
+        saveCache();
+        return [];
+      }
+    }
+
+    async function fetchAllForMonth(year, month) {
+      // Fetch the needed year(s) for all countries
+      const years = new Set([year]);
+      const promises = [];
+      for (const cc of selectedCountries) {
+        for (const y of years) {
+          promises.push(fetchHolidays(y, cc));
+        }
+      }
+      await Promise.all(promises);
+    }
+
+    function getHolidaysForDay(year, month, day) {
+      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const results = [];
+      for (const cc of selectedCountries) {
+        const key = `${year}_${cc}`;
+        const entry = holidayCache[key];
+        const data = (entry && entry.data) ? entry.data : (Array.isArray(entry) ? entry : []);
+        for (const h of data) {
+          if (h.date === dateStr) {
+            results.push({ country: cc, name: h.localName || h.name, intlName: h.name });
+          }
+        }
+      }
+      return results;
+    }
+
+    function renderTags() {
+      const el = document.getElementById('countryTags');
+      el.innerHTML = '';
+      selectedCountries.forEach(cc => {
+        const tag = document.createElement('span');
+        tag.className = 'country-tag';
+        const color = colorMap[cc];
+        tag.style.borderColor = color;
+        tag.style.color = color;
+        tag.style.background = color + '15';
+        const nameEntry = COUNTRIES_DATA.find(c => c[0] === cc);
+        const label = nameEntry ? nameEntry[1] : cc;
+        tag.innerHTML = `${flag(cc)} ${cc} <span class="remove" data-cc="${cc}">&times;</span>`;
+        tag.title = label;
+        el.appendChild(tag);
+      });
+
+      el.querySelectorAll('.remove').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const cc = btn.dataset.cc;
+          selectedCountries = selectedCountries.filter(c => c !== cc);
+          saveCountries();
+          rebuildColorMap();
+          renderAll();
+        });
+      });
+    }
+
+    async function renderCalendar() {
+      const container = document.getElementById('monthsGrid');
+      container.innerHTML = '';
+
+      const monthNames = ['January','February','March','April','May','June',
+        'July','August','September','October','November','December'];
+
+      // Label shows range
+      const endMonth = (viewMonth + 2) % 12;
+      const endYear = viewYear + Math.floor((viewMonth + 2) / 12);
+      document.getElementById('monthLabel').textContent =
+        `${monthNames[viewMonth].slice(0,3)} ${viewYear} – ${monthNames[endMonth].slice(0,3)} ${endYear}`;
+
+      const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+      // Fetch all needed data
+      const fetchPromises = [];
+      for (let i = 0; i < 3; i++) {
+        const m = (viewMonth + i) % 12;
+        const y = viewYear + Math.floor((viewMonth + i) / 12);
+        for (const cc of selectedCountries) {
+          fetchPromises.push(fetchHolidays(y, cc));
+        }
+      }
+      await Promise.all(fetchPromises);
+
+      for (let i = 0; i < 3; i++) {
+        const m = (viewMonth + i) % 12;
+        const y = viewYear + Math.floor((viewMonth + i) / 12);
+
+        const miniMonth = document.createElement('div');
+        miniMonth.className = 'mini-month';
+
+        const title = document.createElement('div');
+        title.className = 'mini-month-title';
+        title.textContent = `${monthNames[m]} ${y}`;
+        miniMonth.appendChild(title);
+
+        const grid = document.createElement('div');
+        grid.className = 'cal-grid';
+
+        ['M','T','W','T','F','S','S'].forEach(d => {
+          const h = document.createElement('div');
+          h.className = 'cal-header';
+          h.textContent = d;
+          grid.appendChild(h);
+        });
+
+        const firstDay = new Date(y, m, 1);
+        let startDow = firstDay.getDay();
+        startDow = startDow === 0 ? 6 : startDow - 1;
+
+        const daysInMonth = new Date(y, m + 1, 0).getDate();
+
+        for (let j = 0; j < startDow; j++) {
+          const cell = document.createElement('div');
+          cell.className = 'cal-cell empty';
+          grid.appendChild(cell);
+        }
+
+        for (let day = 1; day <= daysInMonth; day++) {
+          const cell = document.createElement('div');
+          cell.className = 'cal-cell';
+
+          const dateStr = `${y}-${String(m + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+          if (dateStr === todayStr) cell.classList.add('today');
+
+          const numEl = document.createElement('div');
+          numEl.className = 'day-num';
+          numEl.textContent = day;
+          cell.appendChild(numEl);
+
+          const holidays = getHolidaysForDay(y, m, day);
+
+          if (holidays.length === 1) {
+            cell.classList.add('has-holiday', 'single-country');
+            const bg = document.createElement('div');
+            bg.className = 'holiday-single';
+            bg.style.background = colorMap[holidays[0].country];
+            cell.insertBefore(bg, numEl);
+            numEl.style.color = colorMap[holidays[0].country];
+            numEl.style.fontWeight = '700';
+          } else if (holidays.length > 1) {
+            cell.classList.add('has-holiday');
+            const dots = document.createElement('div');
+            dots.className = 'holiday-dots';
+            holidays.forEach(h => {
+              const dot = document.createElement('div');
+              dot.className = 'holiday-dot';
+              dot.style.background = colorMap[h.country];
+              dots.appendChild(dot);
+            });
+            cell.appendChild(dots);
+          }
+
+          const note = notes[dateStr];
+          if (note) {
+            cell.classList.add('has-note');
+            const dot = document.createElement('div');
+            dot.className = 'note-indicator';
+            cell.appendChild(dot);
+          }
+
+          if (holidays.length > 0 || note) {
+            cell.dataset.holidays = JSON.stringify(holidays);
+            if (note) cell.dataset.note = note;
+            cell.addEventListener('mouseenter', showTooltip);
+            cell.addEventListener('mouseleave', hideTooltip);
+          }
+
+          cell.dataset.date = dateStr;
+          cell.addEventListener('click', () => openNoteEditor(dateStr));
+
+          grid.appendChild(cell);
+        }
+
+        miniMonth.appendChild(grid);
+        container.appendChild(miniMonth);
+      }
+    }
+
+    const tooltip = document.getElementById('tooltip');
+
+    function showTooltip(e) {
+      const holidays = JSON.parse(e.currentTarget.dataset.holidays || '[]');
+      const note = e.currentTarget.dataset.note;
+      let html = holidays.map(h => {
+        const color = colorMap[h.country];
+        return `<div class="tooltip-line">
+          <span class="tooltip-swatch" style="background:${color}"></span>
+          <span>${flag(h.country)} ${h.country}</span>
+          <span style="color:var(--text)">${h.name}</span>
+        </div>`;
+      }).join('');
+      if (note) {
+        html += `<div class="tooltip-line" style="margin-top:4px;color:#fbbf24;font-style:italic">
+          <span class="tooltip-swatch" style="background:#fbbf24"></span>
+          ${note}
+        </div>`;
+      }
+      if (!html) return;
+      tooltip.innerHTML = html;
+      tooltip.classList.add('visible');
+      positionTooltip(e);
+    }
+
+    function positionTooltip(e) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      let left = rect.right + 8;
+      let top = rect.top;
+      if (left + 260 > window.innerWidth) left = rect.left - 268;
+      if (top + 100 > window.innerHeight) top = window.innerHeight - 110;
+      tooltip.style.left = left + 'px';
+      tooltip.style.top = top + 'px';
+    }
+
+    function hideTooltip() {
+      tooltip.classList.remove('visible');
+    }
+
+    async function renderUpcoming() {
+      const list = document.getElementById('upcomingList');
+      list.innerHTML = '';
+
+      if (selectedCountries.length === 0) {
+        list.innerHTML = '<div class="no-countries">Add countries above to see holidays</div>';
+        return;
+      }
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+      // Collect from next 6 months
+      const endDate = new Date(today);
+      endDate.setMonth(endDate.getMonth() + 6);
+
+      // Ensure we have data for needed years
+      const yearsNeeded = new Set();
+      let d = new Date(today);
+      while (d <= endDate) {
+        yearsNeeded.add(d.getFullYear());
+        d.setMonth(d.getMonth() + 1);
+      }
+
+      const fetchPromises = [];
+      for (const cc of selectedCountries) {
+        for (const y of yearsNeeded) {
+          fetchPromises.push(fetchHolidays(y, cc));
+        }
+      }
+      await Promise.all(fetchPromises);
+
+      const endStr = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
+
+      let upcoming = [];
+      for (const cc of selectedCountries) {
+        for (const y of yearsNeeded) {
+          const key = `${y}_${cc}`;
+          const entry = holidayCache[key];
+          const data = (entry && entry.data) ? entry.data : (Array.isArray(entry) ? entry : []);
+          for (const h of data) {
+            if (h.date >= todayStr && h.date <= endStr) {
+              upcoming.push({
+                date: h.date,
+                name: h.localName || h.name,
+                intlName: h.name,
+                country: cc
+              });
+            }
+          }
+        }
+      }
+
+      upcoming.sort((a, b) => a.date.localeCompare(b.date));
+      upcoming = upcoming.slice(0, 10);
+
+      if (upcoming.length === 0) {
+        list.innerHTML = '<div class="no-countries">No upcoming holidays found</div>';
+        return;
+      }
+
+      upcoming.forEach(h => {
+        const item = document.createElement('div');
+        item.className = 'upcoming-item';
+        const color = colorMap[h.country];
+        item.style.borderLeftColor = color;
+
+        const [y, m, d] = h.date.split('-');
+        const dateObj = new Date(Number(y), Number(m) - 1, Number(d));
+        const dateLabel = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+        item.innerHTML = `
+          <span class="upcoming-date">${dateLabel}</span>
+          <span class="upcoming-name">${h.name}</span>
+          <span class="upcoming-country" style="color:${color}">${flag(h.country)} ${h.country}</span>
+        `;
+        list.appendChild(item);
+      });
+    }
+
+    // Note editor
+    let editingDate = null;
+    const noteModal = document.getElementById('noteModal');
+    const noteText = document.getElementById('noteText');
+    const noteDialogTitle = document.getElementById('noteDialogTitle');
+
+    function openNoteEditor(dateStr) {
+      editingDate = dateStr;
+      const [y, m, d] = dateStr.split('-');
+      const dateObj = new Date(Number(y), Number(m) - 1, Number(d));
+      noteDialogTitle.textContent = dateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+      noteText.value = notes[dateStr] || '';
+      noteModal.classList.add('visible');
+      noteText.focus();
+    }
+
+    document.getElementById('noteSave').addEventListener('click', () => {
+      if (!editingDate) return;
+      const val = noteText.value.trim();
+      if (val) {
+        notes[editingDate] = val;
+      } else {
+        delete notes[editingDate];
+      }
+      saveNotes();
+      noteModal.classList.remove('visible');
+      renderCalendar();
+    });
+
+    document.getElementById('noteDelete').addEventListener('click', () => {
+      if (!editingDate) return;
+      delete notes[editingDate];
+      saveNotes();
+      noteModal.classList.remove('visible');
+      renderCalendar();
+    });
+
+    document.getElementById('noteCancel').addEventListener('click', () => {
+      noteModal.classList.remove('visible');
+    });
+
+    noteModal.addEventListener('click', e => {
+      if (e.target === noteModal) noteModal.classList.remove('visible');
+    });
+
+    async function renderAll() {
+      rebuildColorMap();
+      renderTags();
+      await renderCalendar();
+      await renderUpcoming();
+    }
+
+    // Add country
+    function addCountry(code) {
+      code = code.toUpperCase().trim();
+      if (code.length !== 2) return;
+      if (selectedCountries.includes(code)) return;
+      selectedCountries.push(code);
+      saveCountries();
+      renderAll();
+    }
+
+    countrySelect.addEventListener('change', () => {
+      if (countrySelect.value) {
+        addCountry(countrySelect.value);
+        countrySelect.value = '';
+      }
+    });
+
+    document.getElementById('prevMonth').addEventListener('click', () => {
+      viewMonth -= 3;
+      if (viewMonth < 0) { viewMonth += 12; viewYear--; }
+      renderCalendar();
+    });
+
+    document.getElementById('nextMonth').addEventListener('click', () => {
+      viewMonth += 3;
+      if (viewMonth > 11) { viewMonth -= 12; viewYear++; }
+      renderCalendar();
+    });
+
+    // Init
+    renderAll();
+    })();
+  </script>
+</body>
+</html>

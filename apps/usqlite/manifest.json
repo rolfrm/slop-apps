@@ -1,0 +1,28 @@
+{
+  "name": "usqlite \u2014 SQLite Browser",
+  "short_name": "usqlite",
+  "description": "Client-side SQLite database browser",
+  "start_url": "/utools/usqlite/",
+  "scope": "/utools/usqlite/",
+  "display": "standalone",
+  "background_color": "#0a1628",
+  "theme_color": "#4a9eff",
+  "icons": [
+    {
+      "src": "../icons/usqlite.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/usqlite.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "categories": [
+    "utilities",
+    "developer tools"
+  ]
+}

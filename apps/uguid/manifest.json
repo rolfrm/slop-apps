@@ -1,0 +1,28 @@
+{
+  "name": "uguid \u2014 GUID Generator",
+  "short_name": "uguid",
+  "description": "UUID/GUID generator with multiple formats",
+  "start_url": "/utools/uguid/",
+  "scope": "/utools/uguid/",
+  "display": "standalone",
+  "background_color": "#0a1628",
+  "theme_color": "#60a5fa",
+  "icons": [
+    {
+      "src": "../icons/uguid.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/uguid.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "categories": [
+    "utilities",
+    "developer tools"
+  ]
+}

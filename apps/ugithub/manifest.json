@@ -1,0 +1,22 @@
+{
+  "name": "ugithub \u2014 GitHub Monitor",
+  "short_name": "ugithub",
+  "description": "Monitor GitHub issues across multiple repositories",
+  "start_url": "/utools/ugithub/",
+  "scope": "/utools/ugithub/",
+  "display": "standalone",
+  "background_color": "#0a1628",
+  "theme_color": "#58a6ff",
+  "icons": [
+    {
+      "src": "../icons/ugithub.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "categories": [
+    "utilities",
+    "developer tools"
+  ]
+}

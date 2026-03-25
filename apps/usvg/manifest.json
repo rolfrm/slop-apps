@@ -1,0 +1,28 @@
+{
+  "name": "usvg \u2014 SVG Editor",
+  "short_name": "usvg",
+  "description": "Client-side SVG editor with live preview",
+  "start_url": "/utools/usvg/",
+  "scope": "/utools/usvg/",
+  "display": "standalone",
+  "background_color": "#0a1628",
+  "theme_color": "#f0a030",
+  "icons": [
+    {
+      "src": "../icons/usvg.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/usvg.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "categories": [
+    "utilities",
+    "developer tools"
+  ]
+}

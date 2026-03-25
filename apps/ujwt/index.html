@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f472b6">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="../icons/ujwt.svg">
+  <link rel="apple-touch-icon" href="../icons/ujwt.png">
+  <title>ujwt</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0e1a;
+      --surface: #111827;
+      --surface2: #1a2236;
+      --border: #1e2940;
+      --text: #d0d8e8;
+      --text-dim: #6b7a94;
+      --accent: #f472b6;
+      --accent-dim: rgba(244, 114, 182, 0.1);
+      --radius: 8px;
+    }
+
+    body {
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 40px 20px;
+    }
+
+    .container { max-width: 720px; width: 100%; }
+
+    h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 4px; }
+    .subtitle { color: var(--text-dim); font-size: 0.85rem; margin-bottom: 24px; }
+
+    label {
+      display: block;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--accent);
+      margin-bottom: 6px;
+    }
+
+    textarea {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.85rem;
+      padding: 12px;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    textarea:focus { border-color: var(--accent); }
+
+    .sep { height: 1px; background: var(--border); margin: 20px 0; }
+
+    .section-title {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-dim);
+      margin-bottom: 8px;
+    }
+
+    .part {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 10px;
+      overflow: hidden;
+    }
+
+    .part-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .part-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--accent);
+    }
+
+    .copy-btn {
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      cursor: pointer;
+      font-size: 0.75rem;
+      font-family: inherit;
+      padding: 2px 8px;
+      border-radius: 4px;
+      transition: color 0.15s, background 0.15s;
+    }
+    .copy-btn:hover { color: var(--accent); background: var(--accent-dim); }
+    .copy-btn.copied { color: #34d399; }
+
+    .part-body {
+      padding: 12px;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      word-break: break-all;
+      white-space: pre-wrap;
+    }
+
+    .error {
+      color: #f87171;
+      font-size: 0.85rem;
+      padding: 12px;
+      background: rgba(248, 113, 113, 0.08);
+      border: 1px solid rgba(248, 113, 113, 0.2);
+      border-radius: var(--radius);
+    }
+
+    .status-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .status-badge {
+      font-size: 0.75rem;
+      padding: 4px 10px;
+      border-radius: 12px;
+      border: 1px solid;
+    }
+
+    .badge-valid {
+      color: #34d399;
+      border-color: rgba(52, 211, 153, 0.3);
+      background: rgba(52, 211, 153, 0.08);
+    }
+
+    .badge-expired {
+      color: #f87171;
+      border-color: rgba(248, 113, 113, 0.3);
+      background: rgba(248, 113, 113, 0.08);
+    }
+
+    .badge-info {
+      color: var(--accent);
+      border-color: rgba(244, 114, 182, 0.3);
+      background: var(--accent-dim);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>ujwt</h1>
+    <p class="subtitle">Decode JSON Web Tokens. All data stays on your device.</p>
+
+    <label for="jwt-input">Paste JWT</label>
+    <textarea id="jwt-input" rows="5" placeholder="eyJhbGciOiJIUzI1NiIs..."></textarea>
+
+    <div class="sep"></div>
+
+    <div id="output"></div>
+  </div>
+
+  <script>
+    const input = document.getElementById('jwt-input');
+    const output = document.getElementById('output');
+
+    function base64UrlDecode(str) {
+      // Replace URL-safe chars and pad
+      let b64 = str.replace(/-/g, '+').replace(/_/g, '/');
+      const pad = b64.length % 4;
+      if (pad) b64 += '='.repeat(4 - pad);
+      return atob(b64);
+    }
+
+    function tryParseJSON(str) {
+      try {
+        return JSON.parse(str);
+      } catch {
+        return null;
+      }
+    }
+
+    function formatJSON(obj) {
+      return JSON.stringify(obj, null, 2);
+    }
+
+    function describeTimestamp(ts) {
+      const d = new Date(ts * 1000);
+      const now = Date.now() / 1000;
+      const diff = ts - now;
+      let rel;
+      if (Math.abs(diff) < 60) rel = 'just now';
+      else if (Math.abs(diff) < 3600) rel = `${Math.round(Math.abs(diff) / 60)}m ${diff > 0 ? 'from now' : 'ago'}`;
+      else if (Math.abs(diff) < 86400) rel = `${Math.round(Math.abs(diff) / 3600)}h ${diff > 0 ? 'from now' : 'ago'}`;
+      else rel = `${Math.round(Math.abs(diff) / 86400)}d ${diff > 0 ? 'from now' : 'ago'}`;
+      return `${d.toISOString()} (${rel})`;
+    }
+
+    function decode(token) {
+      token = token.trim();
+      if (!token) {
+        output.innerHTML = '';
+        return;
+      }
+
+      const parts = token.split('.');
+      if (parts.length < 2 || parts.length > 3) {
+        output.innerHTML = '<div class="error">Invalid JWT: expected 2 or 3 dot-separated parts</div>';
+        return;
+      }
+
+      let header, payload, headerRaw, payloadRaw;
+      try {
+        headerRaw = base64UrlDecode(parts[0]);
+        header = JSON.parse(headerRaw);
+      } catch {
+        output.innerHTML = '<div class="error">Invalid JWT: could not decode header</div>';
+        return;
+      }
+
+      try {
+        payloadRaw = base64UrlDecode(parts[1]);
+        payload = JSON.parse(payloadRaw);
+      } catch {
+        output.innerHTML = '<div class="error">Invalid JWT: could not decode payload</div>';
+        return;
+      }
+
+      // Build status badges
+      let badges = '';
+      if (header.alg) {
+        badges += `<span class="status-badge badge-info">alg: ${header.alg}</span>`;
+      }
+      if (header.typ) {
+        badges += `<span class="status-badge badge-info">typ: ${header.typ}</span>`;
+      }
+      if (payload.exp) {
+        const now = Date.now() / 1000;
+        if (payload.exp < now) {
+          badges += `<span class="status-badge badge-expired">expired</span>`;
+        } else {
+          badges += `<span class="status-badge badge-valid">not expired</span>`;
+        }
+      }
+
+      // Annotate known claims
+      const claimAnnotations = {};
+      const knownTimestamps = { iat: 'Issued At', exp: 'Expires', nbf: 'Not Before' };
+      for (const [key, label] of Object.entries(knownTimestamps)) {
+        if (typeof payload[key] === 'number') {
+          claimAnnotations[key] = `${label}: ${describeTimestamp(payload[key])}`;
+        }
+      }
+
+      let annotationsHtml = '';
+      if (Object.keys(claimAnnotations).length > 0) {
+        annotationsHtml = '<div class="part"><div class="part-header"><span class="part-label">Timestamps</span></div><div class="part-body">';
+        for (const [key, desc] of Object.entries(claimAnnotations)) {
+          annotationsHtml += `<div><strong>${key}</strong>: ${desc}</div>`;
+        }
+        annotationsHtml += '</div></div>';
+      }
+
+      const sig = parts[2] || '(none)';
+
+      output.innerHTML = `
+        <div class="status-row">${badges}</div>
+        <div class="section-title">Decoded</div>
+        <div class="part">
+          <div class="part-header">
+            <span class="part-label">Header</span>
+            <button class="copy-btn" data-value="${encodeURIComponent(formatJSON(header))}">Copy</button>
+          </div>
+          <div class="part-body">${formatJSON(header)}</div>
+        </div>
+        <div class="part">
+          <div class="part-header">
+            <span class="part-label">Payload</span>
+            <button class="copy-btn" data-value="${encodeURIComponent(formatJSON(payload))}">Copy</button>
+          </div>
+          <div class="part-body">${formatJSON(payload)}</div>
+        </div>
+        ${annotationsHtml}
+        <div class="part">
+          <div class="part-header">
+            <span class="part-label">Signature</span>
+            <button class="copy-btn" data-value="${encodeURIComponent(sig)}">Copy</button>
+          </div>
+          <div class="part-body" style="font-size:0.8rem;color:var(--text-dim);">${sig}</div>
+        </div>
+      `;
+    }
+
+    output.addEventListener('click', e => {
+      const btn = e.target.closest('.copy-btn');
+      if (!btn) return;
+      const value = decodeURIComponent(btn.dataset.value);
+      navigator.clipboard.writeText(value).then(() => {
+        btn.textContent = 'Copied!';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.textContent = 'Copy';
+          btn.classList.remove('copied');
+        }, 1500);
+      });
+    });
+
+    input.addEventListener('input', () => decode(input.value));
+  </script>
+</body>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('../sw.js');</script>
+</html>

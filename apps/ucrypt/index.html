@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f59e0b">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="../icons/ucrypt.svg">
+  <link rel="apple-touch-icon" href="../icons/ucrypt.png">
+  <title>ucrypt</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0e1a;
+      --surface: #111827;
+      --surface2: #1a2236;
+      --border: #1e2940;
+      --text: #d0d8e8;
+      --text-dim: #6b7a94;
+      --accent: #f59e0b;
+      --accent-dim: rgba(245, 158, 11, 0.1);
+      --radius: 8px;
+      --green: #34d399;
+      --red: #f87171;
+    }
+
+    body {
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 40px 20px;
+    }
+
+    .container { max-width: 800px; width: 100%; }
+
+    h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 4px; }
+    .subtitle { color: var(--text-dim); font-size: 0.85rem; margin-bottom: 24px; }
+
+    label {
+      display: block;
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .section { margin-bottom: 20px; }
+
+    .sep { height: 1px; background: var(--border); margin: 20px 0; }
+
+    textarea, input[type="text"], input[type="password"], select {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.85rem;
+      padding: 10px 12px;
+      width: 100%;
+    }
+
+    textarea { resize: vertical; min-height: 100px; }
+    textarea:focus, input:focus, select:focus { outline: none; border-color: var(--accent); }
+    select { cursor: pointer; }
+
+    .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+
+    .btn {
+      background: var(--accent-dim);
+      border: 1px solid var(--accent);
+      border-radius: var(--radius);
+      color: var(--accent);
+      font-family: inherit;
+      font-size: 0.85rem;
+      padding: 10px 18px;
+      cursor: pointer;
+      transition: background 0.15s;
+      white-space: nowrap;
+    }
+    .btn:hover { background: rgba(245, 158, 11, 0.2); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .btn-green {
+      border-color: var(--green);
+      color: var(--green);
+      background: rgba(52, 211, 153, 0.1);
+    }
+    .btn-green:hover { background: rgba(52, 211, 153, 0.2); }
+
+    .btn-small {
+      font-size: 0.75rem;
+      padding: 6px 12px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 0;
+      margin-bottom: 16px;
+    }
+
+    .tab {
+      flex: 1;
+      padding: 10px;
+      text-align: center;
+      font-size: 0.85rem;
+      font-family: inherit;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+    .tab:first-child { border-radius: var(--radius) 0 0 var(--radius); }
+    .tab:last-child { border-radius: 0 var(--radius) var(--radius) 0; }
+    .tab.active {
+      background: var(--accent-dim);
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .file-drop {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .file-drop:hover, .file-drop.dragover {
+      border-color: var(--accent);
+      background: var(--accent-dim);
+    }
+    .file-drop input { display: none; }
+    .file-info {
+      margin-top: 8px;
+      font-size: 0.8rem;
+      color: var(--accent);
+    }
+
+    .hash-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .hash-row {
+      display: flex;
+      align-items: stretch;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .hash-label {
+      display: flex;
+      align-items: center;
+      width: 100px;
+      min-width: 100px;
+      padding: 8px 10px;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--accent);
+      background: var(--surface2);
+      border-right: 1px solid var(--border);
+    }
+
+    .hash-value {
+      flex: 1;
+      padding: 8px 10px;
+      font-size: 0.75rem;
+      line-height: 1.5;
+      word-break: break-all;
+      user-select: all;
+      color: var(--text-dim);
+    }
+
+    .copy-btn {
+      display: flex;
+      align-items: center;
+      padding: 0 10px;
+      background: none;
+      border: none;
+      border-left: 1px solid var(--border);
+      color: var(--text-dim);
+      cursor: pointer;
+      font-size: 0.75rem;
+      font-family: inherit;
+      transition: color 0.15s, background 0.15s;
+      white-space: nowrap;
+    }
+    .copy-btn:hover { color: var(--accent); background: var(--accent-dim); }
+    .copy-btn.copied { color: var(--green); }
+
+    .key-textarea {
+      min-height: 80px;
+      font-size: 0.75rem;
+    }
+
+    .output-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px;
+      font-size: 0.8rem;
+      word-break: break-all;
+      white-space: pre-wrap;
+      max-height: 300px;
+      overflow-y: auto;
+      user-select: all;
+    }
+
+    .error {
+      color: var(--red);
+      font-size: 0.85rem;
+      margin-top: 8px;
+    }
+
+    .hidden { display: none !important; }
+
+    .radio-group { display: flex; gap: 16px; margin-bottom: 12px; }
+    .radio-group label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      text-transform: none;
+      letter-spacing: normal;
+      font-size: 0.85rem;
+      color: var(--text);
+    }
+    .radio-group input[type="radio"] { accent-color: var(--accent); }
+
+    .input-tabs {
+      display: flex;
+      gap: 0;
+      margin-bottom: 12px;
+    }
+    .input-tab {
+      padding: 8px 16px;
+      font-size: 0.8rem;
+      font-family: inherit;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+    .input-tab:first-child { border-radius: var(--radius) 0 0 var(--radius); }
+    .input-tab:last-child { border-radius: 0 var(--radius) var(--radius) 0; }
+    .input-tab.active {
+      background: var(--accent-dim);
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .output-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>ucrypt</h1>
+    <p class="subtitle">Encrypt, decrypt, and hash data in the browser. All data stays on your device.</p>
+
+    <!-- Input mode -->
+    <div class="section">
+      <div class="input-tabs">
+        <button class="input-tab active" data-input="text">Text</button>
+        <button class="input-tab" data-input="file">File</button>
+      </div>
+
+      <div id="text-input">
+        <textarea id="input-text" placeholder="Enter text to encrypt, decrypt, or hash..."></textarea>
+      </div>
+
+      <div id="file-input" class="hidden">
+        <div class="file-drop" id="file-drop">
+          Drop a file here or click to browse
+          <input type="file" id="file-picker">
+          <div class="file-info hidden" id="file-info"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hashes -->
+    <div class="section" id="hash-section">
+      <label>Hashes</label>
+      <div class="hash-grid" id="hash-grid">
+        <div class="hash-row"><div class="hash-label">SHA-1</div><div class="hash-value" id="h-sha1">-</div><button class="copy-btn" data-hash="h-sha1">Copy</button></div>
+        <div class="hash-row"><div class="hash-label">SHA-256</div><div class="hash-value" id="h-sha256">-</div><button class="copy-btn" data-hash="h-sha256">Copy</button></div>
+        <div class="hash-row"><div class="hash-label">SHA-384</div><div class="hash-value" id="h-sha384">-</div><button class="copy-btn" data-hash="h-sha384">Copy</button></div>
+        <div class="hash-row"><div class="hash-label">SHA-512</div><div class="hash-value" id="h-sha512">-</div><button class="copy-btn" data-hash="h-sha512">Copy</button></div>
+      </div>
+    </div>
+
+    <div class="sep"></div>
+
+    <!-- Operation -->
+    <div class="section">
+      <div class="tabs">
+        <button class="tab active" data-op="encrypt">Encrypt</button>
+        <button class="tab" data-op="decrypt">Decrypt</button>
+      </div>
+
+      <div class="radio-group">
+        <label><input type="radio" name="algo" value="aes" checked> AES-256-GCM (symmetric)</label>
+        <label><input type="radio" name="algo" value="rsa"> RSA-OAEP (asymmetric)</label>
+      </div>
+    </div>
+
+    <!-- AES options -->
+    <div class="section" id="aes-opts">
+      <label>Password</label>
+      <input type="password" id="aes-password" placeholder="Enter encryption password...">
+    </div>
+
+    <!-- RSA options -->
+    <div class="section hidden" id="rsa-opts">
+      <div class="row" style="margin-bottom: 12px; align-items: center;">
+        <label style="margin: 0;">RSA Key</label>
+        <button class="btn btn-green btn-small" id="btn-genkey">Generate Key Pair</button>
+      </div>
+      <div id="rsa-encrypt-key">
+        <label>Public Key (PEM)</label>
+        <textarea class="key-textarea" id="rsa-pubkey" placeholder="PEM (BEGIN PUBLIC KEY) or SSH (ssh-rsa AAAA...)"></textarea>
+        <button class="btn btn-small" style="margin-top: 6px;" id="btn-copy-pubkey">Copy Public Key</button>
+      </div>
+      <div id="rsa-decrypt-key" class="hidden" style="margin-top: 10px;">
+        <label>Private Key (PEM)</label>
+        <textarea class="key-textarea" id="rsa-privkey" placeholder="PEM (BEGIN PRIVATE KEY / BEGIN RSA PRIVATE KEY) or OpenSSH format"></textarea>
+        <button class="btn btn-small" style="margin-top: 6px;" id="btn-copy-privkey">Copy Private Key</button>
+      </div>
+    </div>
+
+    <!-- Action -->
+    <div class="section">
+      <button class="btn" id="btn-run">Encrypt</button>
+      <div class="error hidden" id="error-msg"></div>
+    </div>
+
+    <div class="sep"></div>
+
+    <!-- Output -->
+    <div class="section" id="output-section" class="hidden">
+      <label>Output</label>
+      <div class="output-box" id="output-box"></div>
+      <div class="output-actions">
+        <button class="btn btn-small" id="btn-copy-output">Copy</button>
+        <button class="btn btn-small" id="btn-download-output">Download</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- Helpers ---
+    function hexFromBuf(buf) {
+      return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    function b64Encode(buf) {
+      return btoa(String.fromCharCode(...new Uint8Array(buf)));
+    }
+
+    function b64Decode(str) {
+      const bin = atob(str);
+      const buf = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+      return buf;
+    }
+
+    // --- ASN.1 DER helpers ---
+    function concatBytes(...arrays) {
+      const len = arrays.reduce((s, a) => s + a.length, 0);
+      const r = new Uint8Array(len);
+      let off = 0;
+      for (const a of arrays) { r.set(a, off); off += a.length; }
+      return r;
+    }
+
+    function derLen(len) {
+      if (len < 128) return [len];
+      if (len < 256) return [0x81, len];
+      return [0x82, (len >> 8) & 0xff, len & 0xff];
+    }
+
+    function derSeq(...items) {
+      const body = concatBytes(...items);
+      return new Uint8Array([0x30, ...derLen(body.length), ...body]);
+    }
+
+    function derInt(bytes) {
+      // strip leading zeros but keep one if next has high bit
+      let i = 0;
+      while (i < bytes.length - 1 && bytes[i] === 0 && !(bytes[i + 1] & 0x80)) i++;
+      bytes = bytes.slice(i);
+      // add leading zero if high bit set
+      if (bytes[0] & 0x80) bytes = concatBytes(new Uint8Array([0]), bytes);
+      return new Uint8Array([0x02, ...derLen(bytes.length), ...bytes]);
+    }
+
+    function derBitStr(bytes) {
+      return new Uint8Array([0x03, ...derLen(bytes.length + 1), 0x00, ...bytes]);
+    }
+
+    function derOctStr(bytes) {
+      return new Uint8Array([0x04, ...derLen(bytes.length), ...bytes]);
+    }
+
+    const RSA_OID = new Uint8Array([0x06, 0x09, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x01, 0x01]);
+    const DER_NULL = new Uint8Array([0x05, 0x00]);
+    const RSA_ALGO_ID = derSeq(RSA_OID, DER_NULL);
+
+    // --- SSH key format readers ---
+    function readSSHBuf(data, offset) {
+      const len = (data[offset] << 24) | (data[offset + 1] << 16) | (data[offset + 2] << 8) | data[offset + 3];
+      return { val: data.slice(offset + 4, offset + 4 + len), next: offset + 4 + len };
+    }
+
+    function readSSHUint32(data, offset) {
+      return { val: (data[offset] << 24) | (data[offset + 1] << 16) | (data[offset + 2] << 8) | data[offset + 3], next: offset + 4 };
+    }
+
+    // Parse "ssh-rsa AAAA..." → SPKI DER
+    function sshPubToSPKI(keyStr) {
+      const parts = keyStr.trim().split(/\s+/);
+      if (parts[0] !== 'ssh-rsa') throw new Error('Not an ssh-rsa public key');
+      const data = b64Decode(parts[1]);
+      let r = readSSHBuf(data, 0); // key type
+      const keyType = new TextDecoder().decode(r.val);
+      if (keyType !== 'ssh-rsa') throw new Error('Not ssh-rsa');
+      r = readSSHBuf(data, r.next); const e = r.val;
+      r = readSSHBuf(data, r.next); const n = r.val;
+      const rsaPubKey = derSeq(derInt(n), derInt(e));
+      return derSeq(RSA_ALGO_ID, derBitStr(rsaPubKey));
+    }
+
+    // BigInt ↔ bytes
+    function bigFromBytes(b) {
+      let h = '0x';
+      for (const v of b) h += v.toString(16).padStart(2, '0');
+      return BigInt(h || '0x0');
+    }
+
+    function bytesFromBig(n) {
+      let h = n.toString(16);
+      if (h.length % 2) h = '0' + h;
+      const r = new Uint8Array(h.length / 2);
+      for (let i = 0; i < r.length; i++) r[i] = parseInt(h.slice(i * 2, i * 2 + 2), 16);
+      return r;
+    }
+
+    // Parse OpenSSH private key → PKCS#8 DER
+    function opensshPrivToPKCS8(pem) {
+      const b64 = pem.split('\n').filter(l => !l.startsWith('-----')).join('');
+      const data = b64Decode(b64);
+
+      const magic = 'openssh-key-v1\0';
+      const magicBytes = new TextEncoder().encode(magic);
+      for (let i = 0; i < magicBytes.length; i++) {
+        if (data[i] !== magicBytes[i]) throw new Error('Not an OpenSSH private key');
+      }
+      let off = magicBytes.length;
+
+      let r = readSSHBuf(data, off); const cipher = new TextDecoder().decode(r.val); off = r.next;
+      r = readSSHBuf(data, off); off = r.next; // kdf
+      r = readSSHBuf(data, off); off = r.next; // kdfoptions
+      r = readSSHUint32(data, off); off = r.next; // nkeys
+
+      if (cipher !== 'none') throw new Error('Encrypted SSH keys are not supported. Remove passphrase first:\n  ssh-keygen -p -f <keyfile>');
+
+      r = readSSHBuf(data, off); off = r.next; // public key (skip)
+      r = readSSHBuf(data, off); const privSection = r.val;
+
+      // Parse private section
+      let po = 0;
+      let c1 = readSSHUint32(privSection, po); po = c1.next;
+      let c2 = readSSHUint32(privSection, po); po = c2.next;
+      if (c1.val !== c2.val) throw new Error('Checksum mismatch — key may be corrupt');
+
+      r = readSSHBuf(privSection, po); po = r.next; // key type
+      r = readSSHBuf(privSection, po); const n = r.val; po = r.next;
+      r = readSSHBuf(privSection, po); const e = r.val; po = r.next;
+      r = readSSHBuf(privSection, po); const d = r.val; po = r.next;
+      r = readSSHBuf(privSection, po); const iqmp = r.val; po = r.next;
+      r = readSSHBuf(privSection, po); const p = r.val; po = r.next;
+      r = readSSHBuf(privSection, po); const q = r.val; po = r.next;
+
+      // Compute dp, dq using BigInt
+      const dBig = bigFromBytes(d), pBig = bigFromBytes(p), qBig = bigFromBytes(q);
+      const dp = bytesFromBig(dBig % (pBig - 1n));
+      const dq = bytesFromBig(dBig % (qBig - 1n));
+
+      // Build PKCS#1 RSAPrivateKey
+      const pkcs1 = derSeq(
+        derInt(new Uint8Array([0])), // version
+        derInt(n), derInt(e), derInt(d),
+        derInt(p), derInt(q), derInt(dp), derInt(dq), derInt(iqmp)
+      );
+
+      // Wrap in PKCS#8
+      return derSeq(derInt(new Uint8Array([0])), RSA_ALGO_ID, derOctStr(pkcs1));
+    }
+
+    // Parse PKCS#1 "BEGIN RSA PRIVATE KEY" → PKCS#8
+    function pkcs1ToPKCS8(pem) {
+      const b64 = pem.split('\n').filter(l => !l.startsWith('-----')).join('');
+      const pkcs1 = b64Decode(b64);
+      return derSeq(derInt(new Uint8Array([0])), RSA_ALGO_ID, derOctStr(pkcs1));
+    }
+
+    // Auto-detect and convert key to Web Crypto format
+    function convertPublicKey(raw) {
+      raw = raw.trim();
+      if (raw.startsWith('ssh-rsa ')) return sshPubToSPKI(raw);
+      return fromPEM(raw); // already PEM SPKI
+    }
+
+    function convertPrivateKey(raw) {
+      raw = raw.trim();
+      if (raw.includes('BEGIN OPENSSH PRIVATE KEY')) return opensshPrivToPKCS8(raw);
+      if (raw.includes('BEGIN RSA PRIVATE KEY')) return pkcs1ToPKCS8(raw);
+      return fromPEM(raw); // already PKCS#8
+    }
+
+    // --- State ---
+    let inputMode = 'text';
+    let fileData = null;
+    let fileName = '';
+    let operation = 'encrypt';
+    let algorithm = 'aes';
+
+    // --- Elements ---
+    const inputTextEl = document.getElementById('input-text');
+    const fileDropEl = document.getElementById('file-drop');
+    const filePickerEl = document.getElementById('file-picker');
+    const fileInfoEl = document.getElementById('file-info');
+    const errorEl = document.getElementById('error-msg');
+    const outputBox = document.getElementById('output-box');
+    const btnRun = document.getElementById('btn-run');
+
+    // --- Input mode tabs ---
+    document.querySelectorAll('.input-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.input-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        inputMode = tab.dataset.input;
+        document.getElementById('text-input').classList.toggle('hidden', inputMode !== 'text');
+        document.getElementById('file-input').classList.toggle('hidden', inputMode !== 'file');
+        computeHashes();
+      });
+    });
+
+    // --- File handling ---
+    fileDropEl.addEventListener('click', () => filePickerEl.click());
+    fileDropEl.addEventListener('dragover', e => { e.preventDefault(); fileDropEl.classList.add('dragover'); });
+    fileDropEl.addEventListener('dragleave', () => fileDropEl.classList.remove('dragover'));
+    fileDropEl.addEventListener('drop', e => {
+      e.preventDefault();
+      fileDropEl.classList.remove('dragover');
+      if (e.dataTransfer.files.length) loadFile(e.dataTransfer.files[0]);
+    });
+    filePickerEl.addEventListener('change', () => {
+      if (filePickerEl.files.length) loadFile(filePickerEl.files[0]);
+    });
+
+    function loadFile(file) {
+      fileName = file.name;
+      const reader = new FileReader();
+      reader.onload = () => {
+        fileData = reader.result;
+        fileInfoEl.textContent = `${file.name} (${formatSize(file.size)})`;
+        fileInfoEl.classList.remove('hidden');
+        computeHashes();
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function formatSize(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / 1048576).toFixed(1) + ' MB';
+    }
+
+    // --- Hashes ---
+    let hashDebounce = null;
+    inputTextEl.addEventListener('input', () => {
+      clearTimeout(hashDebounce);
+      hashDebounce = setTimeout(computeHashes, 300);
+    });
+
+    async function computeHashes() {
+      const data = getInputData();
+      if (!data || data.byteLength === 0) {
+        ['h-sha1', 'h-sha256', 'h-sha384', 'h-sha512'].forEach(id => {
+          document.getElementById(id).textContent = '-';
+        });
+        return;
+      }
+
+      for (const [name, id] of [['SHA-1','h-sha1'],['SHA-256','h-sha256'],['SHA-384','h-sha384'],['SHA-512','h-sha512']]) {
+        crypto.subtle.digest(name, data).then(hash => {
+          document.getElementById(id).textContent = hexFromBuf(hash);
+        });
+      }
+    }
+
+    function getInputData() {
+      if (inputMode === 'file') return fileData;
+      const text = inputTextEl.value;
+      if (!text) return null;
+      return new TextEncoder().encode(text).buffer;
+    }
+
+    // --- Operation & algorithm tabs ---
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        operation = tab.dataset.op;
+        btnRun.textContent = operation === 'encrypt' ? 'Encrypt' : 'Decrypt';
+        updateKeyVisibility();
+      });
+    });
+
+    document.querySelectorAll('input[name="algo"]').forEach(radio => {
+      radio.addEventListener('change', () => {
+        algorithm = radio.value;
+        document.getElementById('aes-opts').classList.toggle('hidden', algorithm !== 'aes');
+        document.getElementById('rsa-opts').classList.toggle('hidden', algorithm !== 'rsa');
+        updateKeyVisibility();
+      });
+    });
+
+    function updateKeyVisibility() {
+      if (algorithm === 'rsa') {
+        document.getElementById('rsa-encrypt-key').classList.toggle('hidden', operation === 'decrypt');
+        document.getElementById('rsa-decrypt-key').classList.toggle('hidden', operation === 'encrypt');
+      }
+    }
+
+    // --- RSA Key Generation ---
+    document.getElementById('btn-genkey').addEventListener('click', async () => {
+      try {
+        const keyPair = await crypto.subtle.generateKey(
+          { name: 'RSA-OAEP', modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: 'SHA-256' },
+          true, ['encrypt', 'decrypt']
+        );
+
+        const pubExported = await crypto.subtle.exportKey('spki', keyPair.publicKey);
+        const privExported = await crypto.subtle.exportKey('pkcs8', keyPair.privateKey);
+
+        document.getElementById('rsa-pubkey').value = toPEM(pubExported, 'PUBLIC KEY');
+        document.getElementById('rsa-privkey').value = toPEM(privExported, 'PRIVATE KEY');
+
+        // Show both key fields
+        document.getElementById('rsa-encrypt-key').classList.remove('hidden');
+        document.getElementById('rsa-decrypt-key').classList.remove('hidden');
+      } catch (err) {
+        showError('Key generation failed: ' + err.message);
+      }
+    });
+
+    function toPEM(buf, label) {
+      const b64 = b64Encode(buf);
+      const lines = b64.match(/.{1,64}/g) || [];
+      return `-----BEGIN ${label}-----\n${lines.join('\n')}\n-----END ${label}-----`;
+    }
+
+    function fromPEM(pem) {
+      const lines = pem.trim().split('\n').filter(l => !l.startsWith('-----'));
+      return b64Decode(lines.join(''));
+    }
+
+    // --- Encrypt / Decrypt ---
+    btnRun.addEventListener('click', async () => {
+      errorEl.classList.add('hidden');
+      try {
+        if (algorithm === 'aes') {
+          await runAES();
+        } else {
+          await runRSA();
+        }
+      } catch (err) {
+        showError(err.message);
+      }
+    });
+
+    async function deriveKey(password, salt) {
+      const enc = new TextEncoder();
+      const keyMaterial = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']);
+      return crypto.subtle.deriveKey(
+        { name: 'PBKDF2', salt, iterations: 310000, hash: 'SHA-256' },
+        keyMaterial,
+        { name: 'AES-GCM', length: 256 },
+        false,
+        ['encrypt', 'decrypt']
+      );
+    }
+
+    async function runAES() {
+      const password = document.getElementById('aes-password').value;
+      if (!password) throw new Error('Password is required');
+
+      const data = getInputData();
+      if (!data) throw new Error('No input data');
+
+      if (operation === 'encrypt') {
+        const salt = crypto.getRandomValues(new Uint8Array(16));
+        const iv = crypto.getRandomValues(new Uint8Array(12));
+        const key = await deriveKey(password, salt);
+        const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, data);
+
+        // Pack: salt(16) + iv(12) + ciphertext
+        const packed = new Uint8Array(16 + 12 + encrypted.byteLength);
+        packed.set(salt, 0);
+        packed.set(iv, 16);
+        packed.set(new Uint8Array(encrypted), 28);
+
+        outputBox.textContent = b64Encode(packed);
+      } else {
+        // Decrypt - input should be base64
+        let inputB64;
+        if (inputMode === 'text') {
+          inputB64 = inputTextEl.value.trim();
+        } else {
+          inputB64 = new TextDecoder().decode(new Uint8Array(data));
+        }
+
+        const packed = b64Decode(inputB64);
+        if (packed.length < 29) throw new Error('Invalid encrypted data');
+
+        const salt = packed.slice(0, 16);
+        const iv = packed.slice(16, 28);
+        const ciphertext = packed.slice(28);
+
+        const key = await deriveKey(password, salt);
+        const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciphertext);
+
+        // Try to show as text, fall back to base64
+        try {
+          const text = new TextDecoder('utf-8', { fatal: true }).decode(decrypted);
+          outputBox.textContent = text;
+        } catch {
+          outputBox.textContent = '[Binary data] Base64:\n' + b64Encode(decrypted);
+        }
+      }
+    }
+
+    async function runRSA() {
+      const data = getInputData();
+      if (!data) throw new Error('No input data');
+
+      if (operation === 'encrypt') {
+        const pubPem = document.getElementById('rsa-pubkey').value.trim();
+        if (!pubPem) throw new Error('Public key is required');
+
+        const pubKeyData = convertPublicKey(pubPem);
+        const pubKey = await crypto.subtle.importKey(
+          'spki', pubKeyData, { name: 'RSA-OAEP', hash: 'SHA-256' }, false, ['encrypt']
+        );
+
+        // RSA can only encrypt small data; for larger, encrypt an AES key with RSA
+        const rawData = new Uint8Array(data);
+        if (rawData.length <= 190) {
+          // Direct RSA encryption
+          const encrypted = await crypto.subtle.encrypt({ name: 'RSA-OAEP' }, pubKey, data);
+          outputBox.textContent = b64Encode(encrypted);
+        } else {
+          // Hybrid: AES-GCM + RSA-wrapped key
+          const aesKey = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, ['encrypt']);
+          const iv = crypto.getRandomValues(new Uint8Array(12));
+          const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, aesKey, data);
+
+          const rawAesKey = await crypto.subtle.exportKey('raw', aesKey);
+          const wrappedKey = await crypto.subtle.encrypt({ name: 'RSA-OAEP' }, pubKey, rawAesKey);
+
+          // Pack: wrappedKeyLen(2) + wrappedKey + iv(12) + ciphertext
+          const wkBytes = new Uint8Array(wrappedKey);
+          const packed = new Uint8Array(2 + wkBytes.length + 12 + encrypted.byteLength);
+          packed[0] = (wkBytes.length >> 8) & 0xff;
+          packed[1] = wkBytes.length & 0xff;
+          packed.set(wkBytes, 2);
+          packed.set(iv, 2 + wkBytes.length);
+          packed.set(new Uint8Array(encrypted), 2 + wkBytes.length + 12);
+
+          outputBox.textContent = 'HYBRID:' + b64Encode(packed);
+        }
+      } else {
+        const privPem = document.getElementById('rsa-privkey').value.trim();
+        if (!privPem) throw new Error('Private key is required');
+
+        const privKeyData = convertPrivateKey(privPem);
+        const privKey = await crypto.subtle.importKey(
+          'pkcs8', privKeyData, { name: 'RSA-OAEP', hash: 'SHA-256' }, false, ['decrypt']
+        );
+
+        let inputB64;
+        if (inputMode === 'text') {
+          inputB64 = inputTextEl.value.trim();
+        } else {
+          inputB64 = new TextDecoder().decode(new Uint8Array(data));
+        }
+
+        let decrypted;
+        if (inputB64.startsWith('HYBRID:')) {
+          // Hybrid decryption
+          const packed = b64Decode(inputB64.slice(7));
+          const wkLen = (packed[0] << 8) | packed[1];
+          const wrappedKey = packed.slice(2, 2 + wkLen);
+          const iv = packed.slice(2 + wkLen, 2 + wkLen + 12);
+          const ciphertext = packed.slice(2 + wkLen + 12);
+
+          const rawAesKey = await crypto.subtle.decrypt({ name: 'RSA-OAEP' }, privKey, wrappedKey);
+          const aesKey = await crypto.subtle.importKey('raw', rawAesKey, { name: 'AES-GCM' }, false, ['decrypt']);
+          decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, aesKey, ciphertext);
+        } else {
+          decrypted = await crypto.subtle.decrypt({ name: 'RSA-OAEP' }, privKey, b64Decode(inputB64));
+        }
+
+        try {
+          const text = new TextDecoder('utf-8', { fatal: true }).decode(decrypted);
+          outputBox.textContent = text;
+        } catch {
+          outputBox.textContent = '[Binary data] Base64:\n' + b64Encode(decrypted);
+        }
+      }
+    }
+
+    function showError(msg) {
+      errorEl.textContent = msg;
+      errorEl.classList.remove('hidden');
+    }
+
+    // --- Copy hash buttons ---
+    document.getElementById('hash-grid').addEventListener('click', e => {
+      const btn = e.target.closest('.copy-btn');
+      if (!btn) return;
+      const value = document.getElementById(btn.dataset.hash).textContent;
+      if (value === '-') return;
+      copyAndFlash(btn, value);
+    });
+
+    // --- Copy output ---
+    document.getElementById('btn-copy-output').addEventListener('click', () => {
+      const text = outputBox.textContent;
+      if (text) copyAndFlash(document.getElementById('btn-copy-output'), text);
+    });
+
+    document.getElementById('btn-copy-pubkey').addEventListener('click', () => {
+      const text = document.getElementById('rsa-pubkey').value;
+      if (text) copyAndFlash(document.getElementById('btn-copy-pubkey'), text);
+    });
+
+    document.getElementById('btn-copy-privkey').addEventListener('click', () => {
+      const text = document.getElementById('rsa-privkey').value;
+      if (text) copyAndFlash(document.getElementById('btn-copy-privkey'), text);
+    });
+
+    // --- Download output ---
+    document.getElementById('btn-download-output').addEventListener('click', () => {
+      const text = outputBox.textContent;
+      if (!text) return;
+      const blob = new Blob([text], { type: 'application/octet-stream' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = operation === 'encrypt' ? 'encrypted.txt' : 'decrypted.txt';
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    function copyAndFlash(btn, text) {
+      navigator.clipboard.writeText(text).then(() => {
+        const orig = btn.textContent;
+        btn.textContent = 'Copied!';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 1500);
+      });
+    }
+
+    // Initial hash compute
+    computeHashes();
+  </script>
+</body>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('../sw.js');</script>
+</html>

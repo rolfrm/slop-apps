@@ -1,0 +1,299 @@
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* CodeMirror relies on content-box for character measurements */
+.CodeMirror,
+.CodeMirror * {
+  box-sizing: content-box;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: #1e1e1e;
+  color: #ccc;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Toolbar ─────────────────────────────────────────── */
+
+#toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 44px;
+  padding: 0 16px;
+  background: #282c34;
+  border-bottom: 1px solid #3a3f4b;
+  flex-shrink: 0;
+}
+
+.toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.app-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #61afef;
+  letter-spacing: 1px;
+}
+
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#toolbar button {
+  padding: 6px 14px;
+  border: 1px solid #4b5263;
+  border-radius: 4px;
+  background: #3a3f4b;
+  color: #abb2bf;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+#toolbar button:hover {
+  background: #4b5263;
+  color: #fff;
+}
+
+#toolbar button:active {
+  background: #61afef;
+  color: #282c34;
+}
+
+/* ── Main split pane ─────────────────────────────────── */
+
+#main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  height: auto;
+}
+
+#editor-pane {
+  width: 50%;
+  min-width: 200px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+#editor {
+  flex: 1;
+  overflow: auto;
+}
+
+/* CodeMirror 5: fill the pane */
+#editor-pane .CodeMirror {
+  height: 100%;
+  font-size: 13px;
+}
+
+/* Keep cursor visible during selection */
+.CodeMirror-focused .CodeMirror-cursors {
+  visibility: visible !important;
+}
+.CodeMirror-focused .CodeMirror-cursor {
+  visibility: visible !important;
+}
+
+/* ── Divider ─────────────────────────────────────────── */
+
+#divider {
+  width: 6px;
+  cursor: col-resize;
+  background: #3a3f4b;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+#divider:hover,
+#divider.active {
+  background: #61afef;
+}
+
+/* ── Preview pane ────────────────────────────────────── */
+
+#preview-pane {
+  flex: 1;
+  min-width: 200px;
+  overflow: auto;
+  position: relative;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#preview {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+#preview svg {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+/* ── Drop overlay ────────────────────────────────────── */
+
+#drop-overlay {
+  display: none;
+  position: absolute;
+  inset: 0;
+  background: rgba(97, 175, 239, 0.15);
+  border: 3px dashed #61afef;
+  color: #61afef;
+  font-size: 24px;
+  font-weight: 600;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 10;
+}
+
+#drop-overlay.visible {
+  display: flex;
+}
+
+/* ── Coordinate display ──────────────────────────────── */
+
+#status-bar {
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 12px;
+  background: #282c34;
+  border-top: 1px solid #3a3f4b;
+  flex-shrink: 0;
+}
+
+#coord-display {
+  font-family: monospace;
+  font-size: 12px;
+  color: #abb2bf;
+}
+
+/* ── Error indicator ─────────────────────────────────── */
+
+#preview .svg-error {
+  color: #e06c75;
+  font-family: monospace;
+  font-size: 13px;
+  padding: 20px;
+  white-space: pre-wrap;
+  text-align: left;
+  width: 100%;
+}
+
+/* ── Autocomplete hints (dark theme) ─────────────────── */
+
+.CodeMirror-hints {
+  background: #2c313a;
+  border: 1px solid #3a3f4b;
+  border-radius: 4px;
+  color: #abb2bf;
+  font-size: 13px;
+  max-height: 20em;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.CodeMirror-hint {
+  padding: 3px 8px;
+  border-radius: 2px;
+}
+
+.CodeMirror-hint-active {
+  background: #61afef;
+  color: #282c34;
+}
+
+/* ── Element selection overlay ───────────────────────── */
+
+.element-overlay {
+  display: none;
+  position: absolute;
+  border: 2px solid #61afef;
+  pointer-events: none;
+  z-index: 5;
+  box-shadow: 0 0 0 1px rgba(97, 175, 239, 0.3);
+}
+
+.element-overlay.active {
+  display: block;
+  pointer-events: auto;
+  cursor: move;
+}
+
+.overlay-handle {
+  position: absolute;
+  background: #61afef;
+  z-index: 6;
+}
+
+.overlay-handle-right {
+  top: 0;
+  right: -4px;
+  width: 8px;
+  height: 100%;
+  cursor: ew-resize;
+}
+
+.overlay-handle-bottom {
+  bottom: -4px;
+  left: 0;
+  width: 100%;
+  height: 8px;
+  cursor: ns-resize;
+}
+
+.overlay-handle-corner {
+  right: -5px;
+  bottom: -5px;
+  width: 10px;
+  height: 10px;
+  cursor: nwse-resize;
+  border-radius: 2px;
+}
+
+.overlay-handle-right,
+.overlay-handle-bottom {
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.overlay-handle-corner {
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+
+.element-overlay:hover .overlay-handle-right,
+.element-overlay:hover .overlay-handle-bottom {
+  opacity: 0.4;
+}
+
+.element-overlay:hover .overlay-handle-corner {
+  opacity: 1;
+}
